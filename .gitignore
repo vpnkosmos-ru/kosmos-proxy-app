@@ -71,3 +71,14 @@ windows/sign.cer
 .aider.input.history
 .aider.chat.history.md
 .aider.tags.cache.v4
+
+# Kosmos Proxy signing secrets
+*.keystore
+*.jks
+key.properties
+android/key.properties
+android/app/*.keystore
+android/app/*.jks
+secrets/
+.env
+.env.*

@@ -49,13 +49,11 @@ class IntroPage extends HookConsumerWidget with PresLogger {
     // for focus management
     final focusStates = <String, ValueNotifier<bool>>{
       IntroConst.termsAndConditionsKey: useState<bool>(false),
-      IntroConst.githubKey: useState<bool>(false),
-      IntroConst.licenseKey: useState<bool>(false),
+      IntroConst.websiteKey: useState<bool>(false),
     };
     final focusNodes = <String, FocusNode>{
       IntroConst.termsAndConditionsKey: useFocusNode(),
-      IntroConst.githubKey: useFocusNode(),
-      IntroConst.licenseKey: useFocusNode(),
+      IntroConst.websiteKey: useFocusNode(),
     };
     useEffect(() {
       for (final entry in focusNodes.entries) {
@@ -117,7 +115,9 @@ class IntroPage extends HookConsumerWidget with PresLogger {
                         tap: (text) => TextSpan(
                           text: text,
                           style: TextStyle(
-                            color: focusStates[IntroConst.termsAndConditionsKey]!.value ? Colors.green : Colors.blue,
+                            color: focusStates[IntroConst.termsAndConditionsKey]!.value
+                                ? theme.colorScheme.tertiary
+                                : theme.colorScheme.primary,
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () async {
@@ -130,40 +130,17 @@ class IntroPage extends HookConsumerWidget with PresLogger {
                   ),
                   const Gap(8),
                   Focus(
-                    focusNode: focusNodes[IntroConst.githubKey],
-                    onKeyEvent: (node, event) => _handleKeyEvent(event, IntroConst.githubKey),
-                    child: Text.rich(
-                      t.intro.info(
-                        tap_source: (text) => TextSpan(
-                          text: text,
-                          style: TextStyle(
-                            color: focusStates[IntroConst.githubKey]!.value ? Colors.green : Colors.blue,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () async {
-                              await UriUtils.tryLaunch(Uri.parse(Constants.githubUrl));
-                            },
-                        ),
-                        tap_license: (text) => TextSpan(
-                          text: text,
-                          style: TextStyle(
-                            color: focusStates[IntroConst.githubKey]!.value ? Colors.green : Colors.blue,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () async {
-                              await UriUtils.tryLaunch(Uri.parse(Constants.licenseUrl));
-                            },
-                        ),
-                      ),
-                      style: theme.textTheme.bodySmall,
+                    focusNode: focusNodes[IntroConst.websiteKey],
+                    onKeyEvent: (node, event) => _handleKeyEvent(event, IntroConst.websiteKey),
+                    child: TextButton.icon(
+                      onPressed: () async => await UriUtils.tryLaunch(Uri.parse(Constants.websiteUrl)),
+                      icon: const Icon(Icons.language_rounded, size: 18),
+                      label: const Text('vpnkosmos.ru'),
                     ),
                   ),
-                  // only for managing license node focus
-                  Focus(
-                    focusNode: focusNodes[IntroConst.licenseKey],
-                    onKeyEvent: (node, event) => _handleKeyEvent(event, IntroConst.licenseKey),
-                    child: const Gap(88),
-                  ),
+                  // Open-source attribution belongs in Settings → About →
+                  // Open-source licences, rather than in the onboarding UI.
+                  const Gap(88),
                 ],
               ),
             ),

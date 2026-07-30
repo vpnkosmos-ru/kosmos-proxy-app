@@ -61,11 +61,12 @@ class ProfileTile extends HookConsumerWidget {
       // elevation: effectiveElevation,
       margin: margin,
       shape: RoundedRectangleBorder(
-        side: profile.active ? BorderSide(color: theme.colorScheme.outline) : BorderSide.none,
-        borderRadius: ProfileTileConst.cardBorderRadius,
+        side: BorderSide(color: profile.active ? theme.colorScheme.primary.withValues(alpha: .45) : theme.colorScheme.outlineVariant),
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
       ),
       // color: color ?? theme.colorScheme.secondaryContainer,
-      elevation: profile.active ? 0 : 1,
+      color: color ?? (profile.active ? theme.colorScheme.primaryContainer.withValues(alpha: .42) : theme.colorScheme.surface),
+      elevation: 0,
 
       // shadowColor: Colors.transparent,
       child: IntrinsicHeight(

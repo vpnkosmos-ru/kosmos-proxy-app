@@ -53,7 +53,9 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         HardwareKeyboard.instance.removeHandler(handler);
       };
     }, [isMobileBreakpoint, showProfilesAction, navigationShell.currentIndex]);
+    final theme = Theme.of(context);
     return Material(
+      color: theme.scaffoldBackgroundColor,
       child: Scaffold(
         body: isMobileBreakpoint
             ? navigationShell
@@ -80,12 +82,30 @@ class MyAdaptiveLayout extends HookConsumerWidget {
                 ],
               ),
         bottomNavigationBar: isMobileBreakpoint
-            ? FocusScope(
-                node: navScopeNode,
-                child: NavigationBar(
-                  selectedIndex: navigationShell.currentIndex <= 1 ? navigationShell.currentIndex : 0,
-                  destinations: _navDests(_actions(t, showProfilesAction, isMobileBreakpoint)),
-                  onDestinationSelected: (index) => _onTap(context, index),
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(alpha: .10),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: FocusScope(
+                      node: navScopeNode,
+                      child: NavigationBar(
+                        selectedIndex: navigationShell.currentIndex <= 1 ? navigationShell.currentIndex : 0,
+                        destinations: _navDests(_actions(t, showProfilesAction, isMobileBreakpoint)),
+                        onDestinationSelected: (index) => _onTap(context, index),
+                      ),
+                    ),
+                  ),
                 ),
               )
             : null,

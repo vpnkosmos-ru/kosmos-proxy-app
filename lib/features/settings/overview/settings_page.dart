@@ -140,6 +140,7 @@ class SettingsPage extends HookConsumerWidget {
         ],
       ),
       body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
           // TipCard(message: t.settings.experimentalMsg),
           SettingsSection(
@@ -175,13 +176,11 @@ class SettingsPage extends HookConsumerWidget {
             namedLocation: context.namedLocation('tlsTricks'),
           ),
           if (PlatformUtils.isIOS)
-            Material(
+            _SettingsCard(
               child: ListTile(
                 title: Text(t.pages.settings.resetTunnel),
                 leading: const Icon(Icons.autorenew_rounded),
-                onTap: () async {
-                  await ref.read(resetTunnelNotifierProvider.notifier).run();
-                },
+                onTap: () async => await ref.read(resetTunnelNotifierProvider.notifier).run(),
               ),
             ),
           if (Breakpoint(context).isMobile()) ...[
@@ -218,12 +217,34 @@ class SettingsSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: subtitle,
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () => context.go(namedLocation),
+    return _SettingsCard(
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon),
+        ),
+        title: Text(title),
+        subtitle: subtitle,
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => context.go(namedLocation),
+      ),
     );
   }
+}
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Card(child: child),
+  );
 }

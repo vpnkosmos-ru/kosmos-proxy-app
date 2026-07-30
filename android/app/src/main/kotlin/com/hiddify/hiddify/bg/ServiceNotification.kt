@@ -76,7 +76,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
                 .setOngoing(true)
                 .setContentTitle("Kosmos Proxy")
                 .setOnlyAlertOnce(true)
-                .setSmallIcon(R.drawable.ic_stat_logo)
+                .setSmallIcon(R.drawable.ic_stat_kosmos)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setContentIntent(
                         PendingIntent.getActivity(
@@ -109,7 +109,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Application.notification.createNotificationChannel(
                 NotificationChannel(
-                    notificationChannel, "Kosmos Proxy service", NotificationManager.IMPORTANCE_LOW
+                    notificationChannel, service.getString(R.string.service_channel), NotificationManager.IMPORTANCE_LOW
                 )
             )
         }

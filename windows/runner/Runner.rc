@@ -92,9 +92,9 @@ BEGIN
             VALUE "CompanyName", "Kosmos Proxy" "\0"
             VALUE "FileDescription", "Kosmos Proxy" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "hiddify" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2023 Hiddify.com. All rights reserved." "\0"
-            VALUE "OriginalFilename", "Hiddify.exe" "\0"
+            VALUE "InternalName", "KosmosProxy" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Kosmos Proxy. Open-source notices are available in the application." "\0"
+            VALUE "OriginalFilename", "KosmosProxy.exe" "\0"
             VALUE "ProductName", "Kosmos Proxy" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

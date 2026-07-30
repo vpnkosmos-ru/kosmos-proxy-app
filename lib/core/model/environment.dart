@@ -18,7 +18,9 @@ enum Release {
 
   final String key;
 
-  bool get allowCustomUpdateChecker => this == general;
+  // Kosmos Proxy is distributed through private channels.  Do not query an
+  // upstream store or an unpublished endpoint from the user-facing app.
+  bool get allowCustomUpdateChecker => false;
 
   static Release read() =>
       Release.values.firstOrNullWhere((e) => e.key == const String.fromEnvironment("release")) ?? Release.general;

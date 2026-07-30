@@ -1,6 +1,7 @@
 import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/bottom_sheets/bottom_sheets_notifier.dart';
@@ -11,7 +12,6 @@ import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:sliver_tools/sliver_tools.dart';
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
@@ -20,167 +20,253 @@ class HomePage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final t = ref.watch(translationsProvider).requireValue;
-    // final hasAnyProfile = ref.watch(hasAnyProfileProvider);
     final activeProfile = ref.watch(activeProfileProvider);
+    final hasProfile = ref.watch(hasAnyProfileProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
-        // leading: (RootScaffold.stateKey.currentState?.hasDrawer ?? false) && showDrawerButton(context)
-        //     ? DrawerButton(
-        //         onPressed: () {
-        //           RootScaffold.stateKey.currentState?.openDrawer();
-        //         },
-        //       )
-        //     : null,
+        titleSpacing: 20,
         title: Row(
           children: [
-            Assets.images.logo.svg(height: 24),
+            _BrandMark(size: 34),
+            const Gap(10),
+            Text(t.common.appTitle),
             const Gap(8),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: t.common.appTitle),
-                  const TextSpan(text: " "),
-                  const WidgetSpan(child: AppVersionLabel(), alignment: PlaceholderAlignment.middle),
-                ],
-              ),
-            ),
+            const AppVersionLabel(),
           ],
         ),
         actions: [
-          // IconButton(
-          //     onPressed: () => const QuickSettingsRoute().push(context),
-          //     icon: const Icon(FluentIcons.options_24_filled),
-          //     material: (context, platform) => MaterialIconButtonData(
-          //           tooltip: t.config.quickSettings,
-          //         )),
-          // IconButton(
-          //     onPressed: () => const AddProfileRoute().push(context),
-          //     icon: const Icon(FluentIcons.add_circle_24_filled),
-          //     material: (context, platform) => MaterialIconButtonData(
-          //           tooltip: t.profile.add.buttonText,
-          //         )),
           Semantics(
-            key: const ValueKey("profile_add_button"),
+            key: const ValueKey('profile_add_button'),
             label: t.pages.profiles.add,
-            child: IconButton(
-              icon: Icon(Icons.add_rounded, color: theme.colorScheme.primary),
-              onPressed: () => ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile(),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: IconButton.filledTonal(
+                icon: const Icon(Icons.add_rounded),
+                onPressed: () => ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile(),
+              ),
             ),
           ),
-          const Gap(8),
         ],
       ),
-      body: Container(
+      body: DecoratedBox(
         decoration: BoxDecoration(
-          image: DecorationImage(
-            image: const AssetImage('assets/images/world_map.png'), // Replace with your image path
-            fit: BoxFit.cover,
-            opacity: 0.09,
-            colorFilter: theme.brightness == Brightness.dark
-                ? ColorFilter.mode(Colors.white.withValues(alpha: .15), BlendMode.srcIn) //
-                : ColorFilter.mode(
-                    Colors.grey.withValues(alpha: 1),
-                    BlendMode.srcATop,
-                  ), // Apply white tint in dark mode
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [theme.scaffoldBackgroundColor, theme.colorScheme.primaryContainer.withValues(alpha: .20)],
           ),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Center(
+        child: SafeArea(
+          top: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) => Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 600, // Set the maximum width here
-                ),
-                child: CustomScrollView(
-                  slivers: [
-                    // switch (activeProfile) {
-                    // AsyncData(value: final profile?) =>
-                    MultiSliver(
-                      children: [
-                        // const Gap(100),
-                        switch (activeProfile) {
-                          AsyncData(value: final profile?) => ProfileTile(
-                            profile: profile,
-                            isMain: true,
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            color: Theme.of(context).colorScheme.surfaceContainer,
-                          ),
-                          _ => const Text(""),
-                        },
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [ConnectionButton(), ActiveProxyDelayIndicator()],
-                                ),
-                              ),
-                              ActiveProxyFooter(),
-                              Gap(32),
-                            ],
-                          ),
-                        ),
-                      ],
+                constraints: BoxConstraints(maxWidth: constraints.maxWidth > 760 ? 660 : 600),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                  children: [
+                    if (activeProfile case AsyncData(value: final profile?))
+                      ProfileTile(
+                        profile: profile,
+                        isMain: true,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        color: theme.colorScheme.surface,
+                      ),
+                    const _OrbitBackdrop(child: ConnectionButton()),
+                    const Gap(8),
+                    const ActiveProxyDelayIndicator(),
+                    const Gap(20),
+                    if (hasProfile) const ActiveProxyFooter(),
+                    if (hasProfile) const Gap(12),
+                    _HomeActions(
+                      onServers: () => context.goNamed('proxies'),
+                      onProfiles: () => ref.read(bottomSheetsNotifierProvider.notifier).showProfilesOverview(),
                     ),
-                    // AsyncData() => switch (hasAnyProfile) {
-                    //     AsyncData(value: true) => const EmptyActiveProfileHomeBody(),
-                    //     _ => const EmptyProfilesHomeBody(),
-                    //   },
-                    // AsyncError(:final error) => SliverErrorBodyPlaceholder(t.presentShortError(error)),
-                    // _ => const SliverToBoxAdapter(),
-                    // },
+                    const Gap(18),
+                    _HelpCard(onTap: () => context.goNamed('about')),
                   ],
                 ),
               ),
             ),
-            if (ref.watch(hasAnyProfileProvider).value ?? false)
-              Positioned(
-                right: 0,
-                left: 0,
-                bottom: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Material(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                      child: InkWell(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                        onTap: () => ref.read(bottomSheetsNotifierProvider.notifier).showQuickSettings(),
-                        child: Container(
-                          height: 32,
-                          padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(t.pages.home.quickSettings),
-                              const Gap(4),
-                              const Icon(Icons.arrow_drop_up_rounded, size: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _OrbitBackdrop extends StatelessWidget {
+  const _OrbitBackdrop({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 280,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 244,
+            height: 244,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [theme.colorScheme.primaryContainer.withValues(alpha: .76), Colors.transparent],
+              ),
+            ),
+          ),
+          Transform.rotate(
+            angle: -.25,
+            child: Container(
+              width: 320,
+              height: 116,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: theme.colorScheme.secondary.withValues(alpha: .22), width: 2),
+              ),
+            ),
+          ),
+          Positioned(top: 24, right: 52, child: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.tertiary, size: 26)),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeActions extends StatelessWidget {
+  const _HomeActions({required this.onServers, required this.onProfiles});
+
+  final VoidCallback onServers;
+  final VoidCallback onProfiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.language_rounded,
+            title: 'Серверы',
+            subtitle: 'Страны и скорость',
+            color: theme.colorScheme.primary,
+            onTap: onServers,
+          ),
+        ),
+        const Gap(12),
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.manage_accounts_outlined,
+            title: 'Подписка',
+            subtitle: 'Профиль и срок',
+            color: theme.colorScheme.tertiary,
+            onTap: onProfiles,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({required this.icon, required this.title, required this.subtitle, required this.color, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(14)),
+                child: Icon(icon, color: color),
+              ),
+              const Gap(14),
+              Text(title, style: theme.textTheme.titleMedium),
+              const Gap(3),
+              Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HelpCard extends StatelessWidget {
+  const _HelpCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.secondary]),
+                ),
+                child: const Icon(Icons.headset_mic_outlined, color: Colors.white),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Нужна помощь?', style: theme.textTheme.titleMedium),
+                    const Gap(3),
+                    Text('Поддержка и полезная информация', style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: theme.colorScheme.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(size * .30),
+    child: Assets.images.logo.svg(width: size, height: size),
+  );
 }
 
 class AppVersionLabel extends HookConsumerWidget {
@@ -190,21 +276,14 @@ class AppVersionLabel extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final theme = Theme.of(context);
-
     final version = ref.watch(appInfoProvider).requireValue.presentVersion;
     if (version.isBlank) return const SizedBox();
-
     return Semantics(
       label: t.common.version,
-      button: false,
       child: Container(
-        decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(4)),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-        child: Text(
-          version,
-          textDirection: TextDirection.ltr,
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
-        ),
+        decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(10)),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        child: Text(version, textDirection: TextDirection.ltr, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary)),
       ),
     );
   }

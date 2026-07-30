@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <color name="kosmos_background">#F8F7FF</color>
+    <color name="kosmos_dark_background">#151325</color>
 </resources>

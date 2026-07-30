@@ -1,30 +1,32 @@
 import 'package:flutter/material.dart';
 
 class ConnectionButtonTheme extends ThemeExtension<ConnectionButtonTheme> {
-  const ConnectionButtonTheme({this.idleColor, this.connectedColor});
+  const ConnectionButtonTheme({required this.idleColor, required this.connectedColor, required this.connectingColor});
 
-  final Color? idleColor;
-  final Color? connectedColor;
+  final Color idleColor;
+  final Color connectedColor;
+  final Color connectingColor;
 
-  static const ConnectionButtonTheme light = ConnectionButtonTheme(
-    idleColor: Color(0xFF4a4d8b),
-    connectedColor: Color(0xFF44a334),
+  factory ConnectionButtonTheme.kosmos({required bool isDark}) => ConnectionButtonTheme(
+    idleColor: isDark ? const Color(0xFFB8A8FF) : const Color(0xFF6C56F5),
+    connectedColor: const Color(0xFF43B38A),
+    connectingColor: const Color(0xFFFF934D),
   );
 
   @override
-  ThemeExtension<ConnectionButtonTheme> copyWith({Color? idleColor, Color? connectedColor}) => ConnectionButtonTheme(
+  ConnectionButtonTheme copyWith({Color? idleColor, Color? connectedColor, Color? connectingColor}) => ConnectionButtonTheme(
     idleColor: idleColor ?? this.idleColor,
     connectedColor: connectedColor ?? this.connectedColor,
+    connectingColor: connectingColor ?? this.connectingColor,
   );
 
   @override
-  ThemeExtension<ConnectionButtonTheme> lerp(covariant ThemeExtension<ConnectionButtonTheme>? other, double t) {
-    if (other is! ConnectionButtonTheme) {
-      return this;
-    }
+  ConnectionButtonTheme lerp(covariant ThemeExtension<ConnectionButtonTheme>? other, double t) {
+    if (other is! ConnectionButtonTheme) return this;
     return ConnectionButtonTheme(
-      idleColor: Color.lerp(idleColor, other.idleColor, t),
-      connectedColor: Color.lerp(connectedColor, other.connectedColor, t),
+      idleColor: Color.lerp(idleColor, other.idleColor, t)!,
+      connectedColor: Color.lerp(connectedColor, other.connectedColor, t)!,
+      connectingColor: Color.lerp(connectingColor, other.connectingColor, t)!,
     );
   }
 }

@@ -4,11 +4,18 @@ import 'package:hiddify/utils/utils.dart';
 
 abstract class Constants {
   static const appName = "Kosmos Proxy";
-  static const githubUrl = "https://vpnkosmos.ru/";
+  static const websiteUrl = "https://vpnkosmos.ru/";
+  static const githubUrl = websiteUrl;
+  static const supportUrl = "https://vpnspacekpot.ru/cabinet/help";
+  // Mandatory upstream attribution is intentionally kept in the open-source
+  // notices entry only; no regular product screen links to Hiddify.
   static const licenseUrl = "https://github.com/hiddify/hiddify-next?tab=License-1-ov-file#readme";
-  static const githubReleasesApiUrl = "https://api.github.com/repos/hiddify/hiddify-next/releases";
-  static const githubLatestReleaseUrl = "https://github.com/hiddify/hiddify-app/releases/latest";
-  static const appCastUrl = "https://raw.githubusercontent.com/hiddify/hiddify-next/main/appcast.xml";
+  // There is no public update feed. The update checker is intentionally
+  // disabled, and these compatibility constants must never lead users away
+  // from the official product site if an upstream integration is enabled.
+  static const githubReleasesApiUrl = websiteUrl;
+  static const githubLatestReleaseUrl = websiteUrl;
+  static const appCastUrl = websiteUrl;
   static const telegramChannelUrl = "https://telegram.dog/kosmos_vpn";
   static const privacyPolicyUrl = "https://vpnkosmos.ru/";
   static const termsAndConditionsUrl = "https://vpnspacekpot.ru/rules";
@@ -57,12 +64,10 @@ abstract class ProfileTileConst {
 abstract class IntroConst {
   static const maxwidth = 620;
   static const termsAndConditionsKey = 'terms-and-conditions';
-  static const githubKey = 'github';
-  static const licenseKey = 'license';
+  static const websiteKey = 'website';
   static const url = <String, String>{
     IntroConst.termsAndConditionsKey: Constants.termsAndConditionsUrl,
-    IntroConst.githubKey: Constants.githubUrl,
-    IntroConst.licenseKey: Constants.licenseUrl,
+    IntroConst.websiteKey: Constants.websiteUrl,
   };
 }
 

@@ -17,8 +17,6 @@ import 'package:version/version.dart';
 
 part 'app_update_notifier.g.dart';
 
-const _debugUpgrader = true;
-
 @riverpod
 Upgrader upgrader(Ref ref) => Upgrader(
   storeController: UpgraderStoreController(
@@ -31,8 +29,7 @@ Upgrader upgrader(Ref ref) => Upgrader(
     onMacOS: () => UpgraderAppcastStore(appcastURL: Constants.appCastUrl),
     onWeb: () => UpgraderAppcastStore(appcastURL: Constants.appCastUrl),
   ),
-  debugLogging: false && _debugUpgrader && kDebugMode,
-  // durationUntilAlertAgain: const Duration(hours: 12),
+  debugLogging: false,
   messages: UpgraderMessages(code: ref.watch(localePreferencesProvider).languageCode),
 );
 

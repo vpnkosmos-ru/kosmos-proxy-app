@@ -16,7 +16,9 @@ class ProfileTileMain extends HookConsumerWidget {
   final ProfileEntity profile;
   final bool isMain;
   static const verifiedDomains = [
-    'hiddify.com',
+    'vpnkosmos.ru',
+    'vpnspacekpot.ru',
+    'vpnkosmos.taplink.ws',
     // 't.me',
     // 'telegram.me',
     // 'instagram.com',
@@ -24,11 +26,11 @@ class ProfileTileMain extends HookConsumerWidget {
     // 'facebook.com',
   ];
   static const verifiedLinks = [
-    'https://t.me/hiddify',
-    'https://t.me/hiddify_board',
-    'https://instagram.com/hiddify_com',
-    'https://x.com/hiddify_com',
-    'https://facebook.com/hiddify',
+    'https://telegram.dog/kosmos_vpn',
+    'https://vpnkosmos.ru/',
+    'https://vpnspacekpot.ru/cabinet/help',
+    'https://vpnspacekpot.ru/rules',
+    'https://vpnkosmos.taplink.ws/',
   ];
   Future<void> _launchUrlWithCheck(BuildContext context, WidgetRef ref, String url) async {
     final uri = Uri.parse(url);
@@ -183,8 +185,9 @@ class ProfileTileMain extends HookConsumerWidget {
     if (host.endsWith('facebook.com')) {
       return FontAwesomeIcons.facebook;
     }
-    if (host.endsWith('hiddify.com')) {
-      // return IconData();
+    if (host.endsWith('vpnkosmos.ru') || host.endsWith('vpnspacekpot.ru') ||
+        host.endsWith('vpnkosmos.taplink.ws')) {
+      return FluentIcons.globe_24_regular;
     }
     return icon ?? FluentIcons.link_24_regular;
   }
@@ -205,8 +208,9 @@ class ProfileTileMain extends HookConsumerWidget {
     if (host.endsWith('facebook.com')) {
       return uri.pathSegments.lastWhere((e) => e.isNotEmpty, orElse: () => '');
     }
-    if (host.endsWith('hiddify.com')) {
-      return "Hiddify";
+    if (host.endsWith('vpnkosmos.ru') || host.endsWith('vpnspacekpot.ru') ||
+        host.endsWith('vpnkosmos.taplink.ws')) {
+      return "Kosmos Proxy";
     }
     return uri.host;
   }

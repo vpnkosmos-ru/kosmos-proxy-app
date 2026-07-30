@@ -33,7 +33,7 @@ class ShortcutActivity : Activity(), ServiceConnection.Callback {
                         .setIcon(
                             IconCompat.createWithResource(
                                 this,
-                                R.mipmap.ic_launcher
+                                R.drawable.ic_launcher_foreground
                             )
                         )
                         .setShortLabel(getString(R.string.quick_toggle))

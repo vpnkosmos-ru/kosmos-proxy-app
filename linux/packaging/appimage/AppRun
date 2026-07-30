@@ -53,22 +53,22 @@ install_integration() {
     cat > "$TARGET_DESKTOP" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Hiddify
-GenericName=Hiddify
-GenericName[fa]=هیدیفای
+Name=Kosmos Proxy
+GenericName=Kosmos Proxy
+GenericName[fa]=Kosmos Proxy
 Exec="$APPIMAGE"
 Icon=hiddify
 Terminal=false
 StartupWMClass=app.hiddify.com
 Comment=A multi-platform proxy client based on Sing-box universal proxy tool-chain.
 Comment[fa]=یک کلاینت پروکسی چند‌سکویی بر پایه زنجیره-ابزار پروکسی همه‌منظوره سینگ-باکس.
-Keywords=Hiddify;Proxy;VPN;V2ray;Nekoray;Xray;Psiphon;OpenVPN;AntiCensorship;
+Keywords=Kosmos Proxy;Proxy;VPN;V2ray;Nekoray;Xray;Psiphon;OpenVPN;AntiCensorship;
 Keywords[fa]=هیدیفای;پروکسی;وی‌پی‌ان;وی۲ری;نکوباکس;ایکسری;سایفون;اوپن‌وی‌پی‌ان;فیلترشکن;
-X-AppImage-Name=Hiddify
+X-AppImage-Name=Kosmos Proxy
 X-AppImage-Version=$APP_VERSION
 X-AppImage-Arch=x86_64
-X-AppImage-Homepage=https://github.com/hiddify/hiddify-app
-X-AppImage-UpdateURL=https://github.com/hiddify/hiddify-app
+X-AppImage-Homepage=https://vpnkosmos.ru/
+X-AppImage-UpdateURL=https://vpnkosmos.ru/
 EOF
 
     chmod +x "$TARGET_DESKTOP"
@@ -79,12 +79,12 @@ EOF
 show_help() {
 cat << EOF
 Usage: ${0##*/} ...
-start Hiddify or HiddifyCli, when no parameter is given, Hiddify is executed.
+start Kosmos Proxy or HiddifyCli, when no parameter is given, Kosmos Proxy is executed.
     -v              show version
 EOF
 }
 show_version() {
-    printf "Hiddify version "
+    printf "Kosmos Proxy version "
     jq .version <./data/flutter_assets/version.json
 }
 # Initialize variables:

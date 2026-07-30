@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Hiddify AppStream Metadata
+  Kosmos Proxy AppStream Metadata
   Place this file at: linux/packaging/myappid.appdata.xml
 -->
 <component type="desktop-application">
@@ -8,28 +8,28 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
 
-  <name>Hiddify</name>
+  <name>Kosmos Proxy</name>
   <summary>Modern Proxy and VPN Manager for Linux</summary>
 
-  <developer_name>Hiddify</developer_name>
-  <update_contact>linux@hiddify.com</update_contact>
+  <developer_name>Kosmos Proxy</developer_name>
+  <update_contact>support@vpnspacekpot.ru</update_contact>
 
   <description>
     <p>
-      Hiddify is an advanced proxy and VPN client built for privacy and control. 
+      Kosmos Proxy is an advanced proxy and VPN client built for privacy and control.
       It supports multiple backend protocols including V2Ray, Xray, Clash, and Sing-box, 
       providing flexibility and performance for all kinds of network configurations.
     </p>
     <p>
-      Designed with simplicity in mind, Hiddify helps users connect securely and 
+      Designed with simplicity in mind, Kosmos Proxy helps users connect securely and
       manage complex proxy configurations through a clean graphical interface.
     </p>
   </description>
 
   <screenshots>
     <screenshot type="default">
-      <image>https://hiddify.com/assets/hiddify-next-mobile.svg</image>
-      <caption>Main Interface of Hiddify</caption>
+      <image>https://vpnkosmos.ru/</image>
+      <caption>Main Interface of Kosmos Proxy</caption>
     </screenshot>
   </screenshots>
 
@@ -42,7 +42,7 @@
   </categories>
 
   <keywords>
-    <keyword>Hiddify</keyword>
+    <keyword>Kosmos Proxy</keyword>
     <keyword>Proxy</keyword>
     <keyword>VPN</keyword>
     <keyword>V2Ray</keyword>
@@ -62,9 +62,9 @@
     <mime-type>x-scheme-handler/sing-box</mime-type>
   </mime-types>
 
-  <url type="homepage">https://hiddify.com</url>
-  <url type="bugtracker">https://github.com/hiddify/hiddify-app/issues</url>
-  <url type="help">https://docs.hiddify.com</url>
+  <url type="homepage">https://vpnkosmos.ru/</url>
+  <url type="bugtracker">https://vpnspacekpot.ru/cabinet/help</url>
+  <url type="help">https://vpnspacekpot.ru/cabinet/help</url>
 
   <provides>
     <binary>hiddify</binary>
@@ -73,7 +73,7 @@
   <releases>
     <release version="1.0.0" date="2025-10-25">
       <description>
-        <p>Initial Linux release of Hiddify with multi-protocol support and modern UI.</p>
+        <p>Initial Linux release of Kosmos Proxy with multi-protocol support and modern UI.</p>
       </description>
     </release>
   </releases>

@@ -4,6 +4,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
 import 'package:hiddify/features/proxy/widget/proxy_tile.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -26,7 +27,9 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
             onSelected: ref.read(proxiesSortNotifierProvider.notifier).update,
             icon: const Icon(FluentIcons.arrow_sort_24_regular),
             tooltip: t.pages.proxies.sort,
-            itemBuilder: (context) => [for (final item in ProxiesSort.values) PopupMenuItem(value: item, child: Text(item.present(t)))],
+            itemBuilder: (context) => [
+              for (final item in ProxiesSort.values) PopupMenuItem(value: item, child: Text(item.present(t))),
+            ],
           ),
           const Gap(8),
         ],
@@ -42,24 +45,29 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
             ? Center(child: Text(t.pages.proxies.empty))
             : LayoutBuilder(
                 builder: (context, constraints) {
-                  final columns = PlatformUtils.isMobile && constraints.maxWidth < 600 ? 1 : max(1, (constraints.maxWidth / 330).floor());
+                  final columns = PlatformUtils.isMobile && constraints.maxWidth < 600
+                      ? 1
+                      : max(1, (constraints.maxWidth / 330).floor());
                   return CustomScrollView(
                     slivers: [
-                      SliverToBoxAdapter(child: _FastServerBanner(onTap: () => ref.read(proxiesOverviewNotifierProvider.notifier).urlTest('select'))),
+                      SliverToBoxAdapter(
+                        child: _FastServerBanner(
+                          onTap: () => ref.read(proxiesOverviewNotifierProvider.notifier).urlTest('select'),
+                        ),
+                      ),
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                         sliver: SliverGrid(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final proxy = group.items[index];
-                              return ProxyTile(
-                                proxy,
-                                selected: group.selected == proxy.tag,
-                                onTap: () async => await ref.read(proxiesOverviewNotifierProvider.notifier).changeProxy(group.tag, proxy.tag),
-                              );
-                            },
-                            childCount: group.items.length,
-                          ),
+                          delegate: SliverChildBuilderDelegate((context, index) {
+                            final proxy = group.items[index];
+                            return ProxyTile(
+                              proxy,
+                              selected: group.selected == proxy.tag,
+                              onTap: () async => await ref
+                                  .read(proxiesOverviewNotifierProvider.notifier)
+                                  .changeProxy(group.tag, proxy.tag),
+                            );
+                          }, childCount: group.items.length),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: columns,
                             mainAxisExtent: 98,
@@ -104,7 +112,11 @@ class _FastServerBanner extends StatelessWidget {
                 const Gap(5),
                 Text('Проверим задержку и поможем выбрать лучший вариант.', style: theme.textTheme.bodyMedium),
                 const Gap(14),
-                FilledButton.tonalIcon(onPressed: onTap, icon: const Icon(Icons.bolt_rounded), label: const Text('Проверить скорость')),
+                FilledButton.tonalIcon(
+                  onPressed: onTap,
+                  icon: const Icon(Icons.bolt_rounded),
+                  label: const Text('Проверить скорость'),
+                ),
               ],
             ),
           ),

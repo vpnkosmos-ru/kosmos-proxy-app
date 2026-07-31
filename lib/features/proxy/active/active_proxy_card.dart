@@ -14,7 +14,9 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final connection = ref.watch(connectionNotifierProvider.select((value) => value.valueOrNull ?? const Disconnected()));
+    final connection = ref.watch(
+      connectionNotifierProvider.select((value) => value.valueOrNull ?? const Disconnected()),
+    );
     final proxy = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull));
     final t = ref.watch(translationsProvider).requireValue;
     if (connection != const Connected() || proxy == null) return const SizedBox.shrink();
@@ -23,8 +25,10 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
     final delay = proxy.urlTestDelay;
     final delayColor = delay <= 0 || delay > 65000
         ? theme.colorScheme.onSurfaceVariant
-        : delay < 150 ? const Color(0xFF43B38A)
-        : delay < 450 ? theme.colorScheme.tertiary
+        : delay < 150
+        ? const Color(0xFF43B38A)
+        : delay < 450
+        ? theme.colorScheme.tertiary
         : theme.colorScheme.error;
     Future<void> test() async {
       try {
@@ -45,7 +49,8 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
               InkResponse(
                 onTap: () async {
                   await test();
-                  if (context.mounted) await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: proxy);
+                  if (context.mounted)
+                    await ref.read(dialogNotifierProvider.notifier).showProxyInfo(outboundInfo: proxy);
                 },
                 radius: 32,
                 child: IPCountryFlag(countryCode: proxy.ipinfo.countryCode, organization: proxy.ipinfo.org, size: 48),
@@ -55,9 +60,17 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Выбранный сервер', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(
+                      'Выбранный сервер',
+                      style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
                     const SizedBox(height: 3),
-                    Text(proxy.tagDisplay, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleMedium),
+                    Text(
+                      proxy.tagDisplay,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium,
+                    ),
                     if (proxy.ipinfo.ip.isNotEmpty) ...[
                       const SizedBox(height: 3),
                       IPText(ip: proxy.ipinfo.ip, onLongPress: test, constrained: true),
@@ -73,7 +86,11 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
                   Icon(Icons.signal_cellular_alt_rounded, color: delayColor),
                   const SizedBox(height: 3),
                   Text(
-                    delay <= 0 ? '…' : delay > 65000 ? t.common.timeout : '$delay ms',
+                    delay <= 0
+                        ? '…'
+                        : delay > 65000
+                        ? t.common.timeout
+                        : '$delay ms',
                     style: theme.textTheme.labelLarge?.copyWith(color: delayColor),
                   ),
                 ],
@@ -88,4 +105,4 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
   }
 }
 
-String getRealOutboundTag(dynamic group) => group.tagDisplay;
+String getRealOutboundTag(dynamic group) => group.tagDisplay as String;

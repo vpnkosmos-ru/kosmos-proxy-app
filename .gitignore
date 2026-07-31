@@ -82,3 +82,4 @@ android/app/*.jks
 secrets/
 .env
 .env.*
+artifacts/android/*.apk

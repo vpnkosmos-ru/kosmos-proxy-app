@@ -110,7 +110,7 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
                             ? Brightness.light
                             : Brightness.dark,
                       ),
-                      child: child,
+                      child: child ?? const SizedBox(),
                     );
                   },
                 );

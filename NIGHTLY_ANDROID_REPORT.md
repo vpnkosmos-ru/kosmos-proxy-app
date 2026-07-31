@@ -2,95 +2,125 @@
 
 ## 1. Итоговый статус
 
-**BLOCKED: APK не создан.** Пользовательский ребрендинг и Android presentation layer завершены локально, однако проверка и сборка заблокированы отсутствием готового Flutter/Dart/JDK/Android SDK toolchain на рабочей машине. Во время работы была начата локальная установка Flutter, Temurin JDK 17, Android command-line tools и WebP tools через Homebrew; на момент завершения скачивание Flutter и JDK ещё не было завершено. Фиктивный APK не создавался.
+**READY: подписанный release APK создан и проверен.**
 
 ## 2. Что реализовано
 
-- Единая светлая дизайн-система Космос Proxy: палитра, типографика, скругления, тени, карточки, bottom sheets, snackbar, навигация и состояния подключения.
-- Переработаны onboarding, главный экран, подключение, серверы, карточка активного сервера, подписка/профили, настройки и «О приложении».
-- Пользовательские ссылки заменены на сайт, поддержку, оферту и Telegram Космос Proxy.
-- Обновления, которые вели бы к upstream или непубличному endpoint, отключены; update UI не отображается.
-- Android-брендинг: app label, splash palette, adaptive launcher foreground, monochrome notification icon, notification channel, Quick Settings labels и foreground notification.
-- Обязательная ссылка на upstream оставлена только в «Настройки → О приложении → Лицензии открытого ПО».
-- VPN core, applicationId, namespace, package name и native package не менялись.
+- Завершён пользовательский ребрендинг и единая светлая presentation layer Космос Proxy: дизайн-система, onboarding, главная, серверы, профиль/подписка, настройки, поддержка, диалоги и состояния подключения.
+- Пользовательские ссылки заменены на ресурсы Космос Proxy; обязательное upstream-attribution оставлено в лицензиях открытого ПО.
+- Android branding включает `Kosmos Proxy` app label, splash/adaptive assets, notification labels и foreground notification.
+- Восстановлена штатная Android-зависимость VPN-ядра: `hiddify-lib-android` v4.1.0 извлечён локально в игнорируемый `android/app/libs/hiddify-core.aar` согласно `make android-libs`.
+- Нативные идентификаторы и VPN-архитектура не менялись.
 
-## 3. Что не удалось реализовать
+## 3. Toolchain
 
-- `flutter pub get`, code generation, `dart format`, `flutter analyze`, Flutter tests, Android tests/lint и APK-сборки не запускались: в исходном PATH отсутствовали `flutter`, `dart`, `java`, `sdkmanager`, `gradle`, `rustc` и `cargo`.
-- APK (debug/release) не создан, подпись не проверена.
-- Растровые legacy launcher WebP не пересобраны: adaptive icon уже использует обновлённый vector foreground; для конвертации WebP ожидается завершение установки локальных инструментов.
+Подтверждён portable локальный toolchain:
+
+- Flutter 3.38.5 / Dart 3.10.4;
+- Temurin JDK 17.0.20 с `javac`;
+- Android SDK 36.0.0, Build Tools 36.0.0, NDK 28.2.13676358, CMake 3.22.1.
+
+`flutter doctor -v`: Android toolchain — **OK**, все Android licenses accepted. Xcode/Chrome warnings не относятся к Android RC.
 
 ## 4. Локальные коммиты
 
+- `46b34f59 docs: add Android RC nightly report` (перезаписан финальными фактами в рабочем дереве)
 - `2accffca feat: complete Kosmos Proxy presentation layer`
-- `31283d59 wip: checkpoint initial Kosmos Proxy rebranding` (существующий checkpoint)
-- `310bd3ad docs: add Kosmos Proxy design system` (существующий)
-- `cf60509a chore: initialize Kosmos Proxy project rules` (существующий)
+- `31283d59 wip: checkpoint initial Kosmos Proxy rebranding`
+- `310bd3ad docs: add Kosmos Proxy design system`
+- `cf60509a chore: initialize Kosmos Proxy project rules`
 
 ## 5. Результат flutter analyze
 
-Не выполнен: `flutter` отсутствовал в PATH; установка Flutter не завершена.
+Выполнен на Flutter 3.38.5: **240 issues, exit code 1**.
+
+Это upstream lint/backlog: преимущественно generated protobuf, старые `unused_import`, directives ordering, deprecated API и тестовые dependency hints. Ошибок компиляции, вызванных текущими UI-изменениями, анализ не показал.
 
 ## 6. Результаты тестов
 
-Не выполнены: Flutter/Dart toolchain отсутствовал.
+- `flutter test`: **PASS**, 25 тестов.
+- `android/gradlew test lint --no-daemon`: часть доступных unit tests прошла, однако общий task завершился ошибкой upstream dependency: `:mobile_scanner:compileDebugUnitTestKotlin`, Jetifier не поддерживает class file major version 68 в `net.bytebuddy:byte-buddy:1.17.7`. Это не блокирует сборку APK; debug и signed release успешно собраны.
 
 ## 7. Результаты сборок
 
-- Debug APK: не выполнена.
-- Release APK: не выполнена.
-- Причина: отсутствовал готовый Flutter + JDK + Android SDK toolchain.
+- Debug APK: **PASS** — `flutter build apk --debug --android-skip-build-dependency-validation`.
+- Signed release APK: **PASS** — `flutter build apk --release --android-skip-build-dependency-validation`.
+- Дополнительные нефатальные предупреждения: deprecated Java API у `in_app_review`, font-tree-shaking family warning и SDK XML version warning.
 
 ## 8. Путь к APK
 
-Не создан. Целевой путь после устранения блокера:
-`artifacts/android/Kosmos-Proxy-release.apk`
+- Release: `artifacts/android/Kosmos-Proxy-release.apk`
+- Debug: `artifacts/android/Kosmos-Proxy-debug.apk`
 
-## 9. SHA-256
+## 9. SHA-256 и размер
 
-Не применимо: APK не создан.
+- Release: `e15be0f8e75b774cdc76379e03d19274922e681f0853bf5e95180c2e1b88baae`, **337,641,691 bytes**.
+- Debug: `f94cd142a4ec1f4390a1abe73ff026a0c4974833a74a52b077b2601d7cd1318d`, **439,447,792 bytes**.
 
-## 10. applicationId
+## 10. applicationId, versionName и versionCode
 
-`app.hiddify.com` (сознательно не менялся по требованию задачи).
+- applicationId: `app.hiddify.com` (сознательно сохранён).
+- versionName: `4.1.2`.
+- versionCode: `40102`.
+- Тип финальной сборки: universal signed release APK.
 
-## 11. versionName и versionCode
+## 11. Результат проверки подписи
 
-`4.1.2` / `40102` (из `pubspec.yaml`; Android получает значения через Flutter build).
+`apksigner verify --verbose --print-certs` — **PASS**:
 
-## 12. Результат проверки подписи
+- APK Signature Scheme v2: verified;
+- один signer;
+- RSA 4096-bit;
+- certificate SHA-256: `dcb06dae5838e57f51b07ad7a6565c6bfed5692203fc37af2296e284e0927aa0`.
 
-Не выполнена: APK не создан. Keystore `/Users/yegorkapng/KosmosKeys/KosmosProxy-release.keystore` существует и не отслеживается Git. `android/key.properties` игнорируется и не создавался, пароль keystore не запрашивался без необходимости сборки.
+Постоянный keystore и `android/key.properties` не отслеживаются Git; пароль не выводился и не сохранялся в репозитории.
 
-## 13. Оставшиеся упоминания Hiddify и причины
+## 12. Оставшиеся упоминания Hiddify и причины
 
-- `Constants.licenseUrl` ведёт на upstream лицензию: обязательное attribution, доступно только через «Лицензии открытого ПО».
-- `app.hiddify.com`, `com.hiddify.hiddify`, Dart package/imports, `hiddify-core` и deeplink `hiddify`: технические native/core identifiers. Не менялись, чтобы не повредить VPN, импорты, shortcuts и существующие установки.
-- Upstream README, CI, Makefile, NOTICE/LICENSE, generated files и тестовые/технические материалы: не являются пользовательским Android UI и сохранены.
+- `app.hiddify.com`, `com.hiddify.hiddify`, Dart package/imports, `hiddify-core` и deeplink `hiddify`: технические native/core identifiers, оставлены для совместимости VPN, импортов, shortcuts и существующих установок.
+- LICENSE/NOTICE, upstream documentation, CI, Makefile, generated files и тестовые материалы: юридические, технические или upstream-материалы; не являются пользовательским Android UI.
+- Android core AAR сохранён как техническая зависимость и загружается штатным Makefile-механизмом.
 
-## 14. Известные проблемы
+## 13. Известные проблемы
 
-- Сборочный toolchain ещё скачивается; проверка компиляции изменений обязательна после завершения установки.
-- Для release build нужно безопасно создать локальный, игнорируемый `android/key.properties` во время сборки, прочитав пароль из Keychain без вывода в консоль.
-- URL `hiddify` остаётся в Android manifest и iOS scheme как совместимый технический deeplink; это не пользовательская ссылка/брендинг.
+1. `flutter analyze` имеет 240 существующих lint/info/warning issues.
+2. Общий Android `test lint` блокируется `mobile_scanner` / Jetifier на byte-buddy class-file 68; APK-сборки проходят.
+3. Release APK большой (универсальный, содержит ABI `armeabi-v7a`, `arm64-v8a`, `x86_64` и VPN core). Для поставки можно отдельно выбрать ABI APK из `build/app/outputs/apk/release/`.
+4. Ручной Android smoke test на физическом устройстве не выполнялся в этой сессии.
 
-## 15. Чт�� проверить вручную на Android
+## 14. Что проверить вручную на Android
 
-1. Первый запуск: импорт ссылки/QR/deeplink, оферта и переход на `vpnkosmos.ru`.
-2. VPN permission, подключение, отключение, восстановление состояния и foreground notification.
-3. Выбор сервера и тест задержки, длинные названия/малый экран/увеличенный системный шрифт.
+1. Первый запуск, импорт ссылки/QR/deeplink и переходы на сайт/поддержку/оферту.
+2. VPN permission, connect/disconnect, восстановление состояния и foreground notification.
+3. Выбор сервера, тест задержки, длинные названия, малый экран и увеличенный системный шрифт.
 4. Настройки протокола, split tunneling и диагностику.
 5. Quick Settings tile, launcher/adaptive/monochrome icons и Android 12 splash.
-6. Экран «О приложении»: поддержка, Telegram, оферта, privacy и единственный upstream attribution в лицензиях.
+6. Экран «О приложении»: пользовательские ссылки и upstream attribution только в лицензиях.
 
-## 16. git status --short
+## 15. git status --short
 
-Чистое рабочее дерево до добавления данного отчёта.
+На момент отчёта:
 
-## 17. git diff --stat
+```text
+ M android/gradle.properties
+ M lib/features/app/widget/app.dart
+ M lib/features/proxy/active/active_proxy_card.dart
+ M lib/features/proxy/overview/proxies_overview_page.dart
+?? artifacts/
+```
 
-Чистый diff до добавления данного отчёта.
+`android/key.properties` и `android/app/libs/hiddify-core.aar` игнорируются, в статус не попадают.
 
-## 18. Ограничения релиза
+## 16. git diff --stat
 
-`git push`, remote changes, merge в main, GitHub Release, публикация APK, Google Play upload и деплой не выполнялись.
+```text
+ android/gradle.properties                          |  6 +++-
+ lib/features/app/widget/app.dart                   |  2 +-
+ lib/features/proxy/active/active_proxy_card.dart   | 33 ++++++++++++-----
+ lib/features/proxy/overview/proxies_overview_page.dart | 42 ++++++++++++++--------
+ 4 files changed, 58 insertions(+), 25 deletions(-)
+```
+
+## 17. Ограничения релиза
+
+`git push`, изменение remote, merge в main, GitHub Release, публикация APK, Google Play upload и deployment **не выполнялись**.

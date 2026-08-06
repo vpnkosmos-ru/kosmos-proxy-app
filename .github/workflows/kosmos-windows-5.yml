@@ -38,6 +38,9 @@ jobs:
           Invoke-WebRequest "https://github.com/hiddify/hiddify-core/releases/download/v${env:CORE_VERSION}/hiddify-lib-windows-amd64.tar.gz" -OutFile core.tar.gz
           tar -xzf core.tar.gz -C hiddify-core/bin
           Get-ChildItem hiddify-core/bin
+      - name: Generate Dart providers required by the clean checkout
+        shell: pwsh
+        run: dart run build_runner build --delete-conflicting-outputs
       - name: Flutter dependencies and static checks
         shell: pwsh
         run: |

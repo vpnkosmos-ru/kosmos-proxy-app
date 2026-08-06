@@ -14,7 +14,7 @@ part 'directories_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 class AppDirectories extends _$AppDirectories with InfraLogger {
-  final _methodChannel = const MethodChannel("com.hiddify.app/platform");
+  final _methodChannel = const MethodChannel("ru.kosmosproxy.app/platform");
 
   @override
   Future<Directories> build() async {
@@ -82,7 +82,7 @@ class AppDirectories extends _$AppDirectories with InfraLogger {
 
   static Directory getPortableDirectory() {
     final exeDir = File(Platform.resolvedExecutable).parent;
-    return Directory(p.join(exeDir.path, 'hiddify_portable_data'));
+    return Directory(p.join(exeDir.path, 'kosmos_proxy_portable_data'));
   }
 
   static Future<bool> checkDirectoryAccess(Directory dir) async {

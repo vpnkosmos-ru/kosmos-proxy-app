@@ -1,0 +1,79 @@
+name: Kosmos Proxy Windows 5.0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/kosmos-windows-5-build]
+    paths:
+      - 'lib/**'
+      - 'windows/**'
+      - 'hiddify-core/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/kosmos-windows-5.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 55
+    env:
+      FLUTTER_VERSION: 3.38.5
+      CORE_VERSION: 4.1.0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Download verified Windows VPN core
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force hiddify-core/bin | Out-Null
+          Invoke-WebRequest "https://github.com/hiddify/hiddify-core/releases/download/v${env:CORE_VERSION}/hiddify-lib-windows-amd64.tar.gz" -OutFile core.tar.gz
+          tar -xzf core.tar.gz -C hiddify-core/bin
+          Get-ChildItem hiddify-core/bin
+      - name: Flutter dependencies and static checks
+        shell: pwsh
+        run: |
+          flutter pub get
+          flutter analyze lib test --no-fatal-warnings --no-fatal-infos
+          flutter test
+      - name: Build Windows release bundle
+        shell: pwsh
+        run: flutter build windows --release
+      - name: Verify core and bundle
+        shell: pwsh
+        run: |
+          $bundle = 'build/windows/x64/runner/Release'
+          if (!(Test-Path "$bundle/KosmosProxy.exe")) { throw 'KosmosProxy.exe missing' }
+          foreach ($file in 'hiddify-core.dll','libcronet.dll','HiddifyCli.exe') { if (!(Test-Path "$bundle/$file")) { throw "$file missing" } }
+          (Get-Item "$bundle/KosmosProxy.exe").VersionInfo | Format-List | Out-File windows-version.txt
+          Get-FileHash "$bundle/KosmosProxy.exe" -Algorithm SHA256 | Format-List | Out-File windows-sha256.txt
+      - name: Create portable ZIP and Inno Setup installer
+        shell: pwsh
+        run: |
+          dart pub global activate fastforge 0.6.12
+          $env:PATH += ";$env:LOCALAPPDATA/Pub/Cache/bin"
+          fastforge package --platform windows --targets zip,exe --skip-clean --build-target lib/main.dart --build-dart-define portable=true
+          New-Item -ItemType Directory -Force artifacts/windows | Out-Null
+          $zip = Get-ChildItem dist -Recurse -Filter '*.zip' | Select-Object -First 1
+          $exe = Get-ChildItem dist -Recurse -Filter '*.exe' | Where-Object { $_.Name -notmatch 'HiddifyCli' } | Select-Object -First 1
+          if (!$zip -or !$exe) { throw 'Fastforge output missing' }
+          Copy-Item $zip.FullName artifacts/windows/Kosmos-Proxy-5.0-portable.zip
+          Copy-Item $exe.FullName artifacts/windows/Kosmos-Proxy-5.0-Setup.exe
+          Copy-Item build/windows/x64/runner/Release/KosmosProxy.exe artifacts/windows/Kosmos-Proxy-5.0.exe
+          Get-ChildItem artifacts/windows | Get-FileHash -Algorithm SHA256 | Format-Table -AutoSize | Out-File artifacts/windows/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kosmos-proxy-windows-5.0
+          path: |
+            artifacts/windows/**
+            windows-version.txt
+            windows-sha256.txt
+          if-no-files-found: error

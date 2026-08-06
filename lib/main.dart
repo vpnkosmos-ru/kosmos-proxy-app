@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hiddify/bootstrap.dart';
 import 'package:hiddify/core/model/environment.dart';
@@ -14,5 +14,5 @@ Future<void> main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
   );
 
-  return await lazyBootstrap(widgetsBinding, Environment.dev);
+  return await lazyBootstrap(widgetsBinding, kReleaseMode ? Environment.prod : Environment.dev);
 }

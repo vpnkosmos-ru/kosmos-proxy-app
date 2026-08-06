@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
+import 'package:hiddify/core/widget/kosmos_surface.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
-import 'package:hiddify/features/proxy/active/ip_widget.dart';
+import 'package:hiddify/features/proxy/active/ip_widget.dart' show IPCountryFlag;
+import 'package:hiddify/features/proxy/model/outbound_display_name.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -18,7 +19,6 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
       connectionNotifierProvider.select((value) => value.valueOrNull ?? const Disconnected()),
     );
     final proxy = ref.watch(activeProxyNotifierProvider.select((value) => value.valueOrNull));
-    final t = ref.watch(translationsProvider).requireValue;
     if (connection != const Connected() || proxy == null) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
@@ -38,7 +38,8 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
       }
     }
 
-    return Card(
+    return KosmosSurface(
+      padding: EdgeInsets.zero,
       child: InkWell(
         onTap: () => context.goNamed('proxies'),
         borderRadius: BorderRadius.circular(24),
@@ -66,16 +67,11 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      proxy.tagDisplay,
+                      displayOutboundName(proxy.tagDisplay),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium,
                     ),
-                    if (proxy.ipinfo.ip.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      IPText(ip: proxy.ipinfo.ip, onLongPress: test, constrained: true),
-                    ] else
-                      Text(t.pages.proxies.unknownIp, style: theme.textTheme.bodySmall),
                   ],
                 ),
               ),
@@ -89,7 +85,7 @@ class ActiveProxyFooter extends ConsumerWidget with InfraLogger {
                     delay <= 0
                         ? '…'
                         : delay > 65000
-                        ? t.common.timeout
+                        ? 'Недоступен'
                         : '$delay ms',
                     style: theme.textTheme.labelLarge?.copyWith(color: delayColor),
                   ),

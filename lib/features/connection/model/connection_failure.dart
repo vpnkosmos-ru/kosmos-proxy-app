@@ -32,6 +32,9 @@ sealed class ConnectionFailure with _$ConnectionFailure, Failure {
   const factory ConnectionFailure.backgroundCoreNotAvailable([String? message]) = BackgroundCoreNotAvailable;
 
   @With<ExpectedMeasuredFailure>()
+  const factory ConnectionFailure.timeout([String? message]) = ConnectionTimeout;
+
+  @With<ExpectedMeasuredFailure>()
   const factory ConnectionFailure.missiingWarpLicense() = MissingWarpLicense;
 
   @With<ExpectedMeasuredFailure>()
@@ -55,6 +58,11 @@ sealed class ConnectionFailure with _$ConnectionFailure, Failure {
         configOptionFailure?.present(t) ?? (type: t.errors.singbox.invalidConfigOptions, message: message),
       InvalidConfig(:final message) => (type: t.errors.singbox.invalidConfig, message: message),
       BackgroundCoreNotAvailable(:final message) => (type: t.errors.connectivity.core, message: message),
+      ConnectionTimeout() => (
+        type: 'Не удалось подключиться',
+        message:
+            'Проверьте интернет-соединение или выберите другой сервер. Если ошибка повторяется, обновите подписку.',
+      ),
       MissingWarpLicense() => (type: t.errors.warp.missingLicense, message: t.errors.warp.missingLicenseMsg),
       MissingPsiphonLicense() => (type: t.errors.psiphon.missingLicense, message: t.errors.psiphon.missingLicenseMsg),
     };

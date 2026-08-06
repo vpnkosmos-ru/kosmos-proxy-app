@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
+import 'package:hiddify/features/network/base_network_transport.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
 import 'package:hiddify/features/proxy/widget/proxy_tile.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -18,6 +19,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
     final t = ref.watch(translationsProvider).requireValue;
     final proxies = ref.watch(proxiesOverviewNotifierProvider);
     final sortBy = ref.watch(proxiesSortNotifierProvider);
+    final baseTransport = ref.watch(baseNetworkTransportProvider).valueOrNull ?? BaseNetworkTransport.none;
     return Scaffold(
       appBar: AppBar(
         title: Text(t.pages.proxies.title),
@@ -60,12 +62,22 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                         sliver: SliverGrid(
                           delegate: SliverChildBuilderDelegate((context, index) {
                             final proxy = group.items[index];
+                            final displayName = proxy.tagDisplay.isEmpty ? proxy.tag : proxy.tagDisplay;
+                            final enabled = isServerAllowedForTransport(
+                              displayName,
+                              baseTransport,
+                              tag: proxy.tag,
+                              type: proxy.type,
+                            );
                             return ProxyTile(
                               proxy,
                               selected: group.selected == proxy.tag,
-                              onTap: () async => await ref
-                                  .read(proxiesOverviewNotifierProvider.notifier)
-                                  .changeProxy(group.tag, proxy.tag),
+                              enabled: enabled,
+                              onTap: enabled
+                                  ? () async => await ref
+                                        .read(proxiesOverviewNotifierProvider.notifier)
+                                        .changeProxy(group.tag, proxy.tag)
+                                  : null,
                             );
                           }, childCount: group.items.length),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

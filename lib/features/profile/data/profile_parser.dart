@@ -47,6 +47,7 @@ class ProfileParser {
     'profile-title',
     'content-disposition',
     'subscription-userinfo',
+    'x-subscription-userinfo',
     'profile-update-interval',
     'support-url',
     'profile-web-page-url',
@@ -161,7 +162,7 @@ class ProfileParser {
           tempFilePath,
           cancelToken: cancelToken,
           userAgent: _ref.read(ConfigOptions.useXrayCoreWhenPossible)
-              ? _httpClient.userAgent.replaceAll("HiddifyNext", "HiddifyNextX")
+              ? _httpClient.userAgent.replaceFirst("KosmosProxy", "KosmosProxyXray")
               : null,
         )
         .catchError((err) {
@@ -178,8 +179,9 @@ class ProfileParser {
     );
     // fixing headers before return
     return rs.headers.map.map((key, value) {
-      if (value.length == 1) return MapEntry(key, value.first);
-      return MapEntry(key, value);
+      final normalizedKey = key.toLowerCase();
+      if (value.length == 1) return MapEntry(normalizedKey, value.first);
+      return MapEntry(normalizedKey, value);
     });
   }, (err, st) => err is ProfileFailure ? err : ProfileFailure.unexpected(err, st));
   Future<void> expandRemoteLinesInParallel({
@@ -219,7 +221,7 @@ class ProfileParser {
             tmpPath,
             cancelToken: cancelToken,
             userAgent: ref.read(ConfigOptions.useXrayCoreWhenPossible)
-                ? httpClient.userAgent.replaceAll('HiddifyNext', 'HiddifyNextX')
+                ? httpClient.userAgent.replaceFirst('KosmosProxy', 'KosmosProxyXray')
                 : null,
           );
 
@@ -254,13 +256,22 @@ class ProfileParser {
     Map<String, dynamic> contentHeaders,
     Map<String, dynamic> remoteHeaders,
   ) {
+    // HTTP field names are case-insensitive. Dio normally lowercases them, but
+    // profile imports, tests and alternate clients can supply their original
+    // casing. Keep a single canonical representation and flatten one-value
+    // header lists before parsing profile metadata.
+    final normalizedRemoteHeaders = <String, dynamic>{
+      for (final entry in remoteHeaders.entries)
+        entry.key.trim().toLowerCase(): switch (entry.value) {
+          final List<dynamic> values when values.length == 1 => values.first,
+          _ => entry.value,
+        },
+    };
     for (final entry in contentHeaders.entries) {
-      if (!remoteHeaders.keys.contains(entry.key)) {
-        remoteHeaders[entry.key] = entry.value;
-      }
+      normalizedRemoteHeaders.putIfAbsent(entry.key.toLowerCase(), () => entry.value);
     }
     final headers = <String, dynamic>{};
-    for (final entry in remoteHeaders.entries) {
+    for (final entry in normalizedRemoteHeaders.entries) {
       if (allowedProfileHeaders.contains(entry.key) && entry.value != null && entry.value.toString().isNotEmpty) {
         headers[entry.key] = entry.value;
       }
@@ -288,18 +299,34 @@ class ProfileParser {
 
   static SubscriptionInfo? _parseSubscriptionInfo(String subInfoStr) {
     final values = subInfoStr.split(';');
-    final map = {for (final v in values) v.split('=').first.trim(): num.tryParse(v.split('=').second.trim())?.toInt()};
-    if (map case {"upload": final upload?, "download": final download?, "total": final total, "expire": var expire}) {
-      final total1 = (total == null || total == 0) ? infiniteTrafficThreshold + 1 : total;
-      expire = (expire == null || expire == 0) ? infiniteTimeThreshold : expire;
-      return SubscriptionInfo(
-        upload: upload,
-        download: download,
-        total: total1,
-        expire: DateTime.fromMillisecondsSinceEpoch(expire * 1000),
-      );
+    final map = <String, int?>{};
+    for (final item in values) {
+      final separator = item.indexOf('=');
+      if (separator <= 0) continue;
+      // Some subscription generators serialise byte counts and expiry as
+      // decimal numbers. Their integer component is the protocol value.
+      final rawValue = item.substring(separator + 1).trim();
+      map[item.substring(0, separator).trim().toLowerCase()] =
+          int.tryParse(rawValue) ?? double.tryParse(rawValue)?.truncate();
     }
-    return null;
+    // Subscription-Userinfo servers are allowed to publish only an expiry.
+    // The profile model still needs traffic values for its legacy UI, so use
+    // safe unlimited defaults rather than discarding a valid `expire` header.
+    final expire = map['expire'];
+    if (expire == null) return null;
+    // `expire=0` is the established subscription convention for no expiry.
+    // Keep it distinct from a malformed timestamp and render it as unlimited.
+    final normalizedExpire = expire == 0 ? infiniteTimeThreshold : (expire > 99999999999 ? expire ~/ 1000 : expire);
+    if (normalizedExpire != infiniteTimeThreshold && (normalizedExpire < 1577836800 || normalizedExpire > 4102444800)) {
+      return null;
+    }
+    final total = map['total'];
+    return SubscriptionInfo(
+      upload: map['upload'] ?? 0,
+      download: map['download'] ?? 0,
+      total: (total == null || total == 0) ? infiniteTrafficThreshold + 1 : total,
+      expire: DateTime.fromMillisecondsSinceEpoch(normalizedExpire * 1000),
+    );
   }
 
   @visibleForTesting
@@ -357,8 +384,9 @@ class ProfileParser {
         }
 
         SubscriptionInfo? subInfo;
-        if (headers['subscription-userinfo'] case final String subInfoStr) {
-          subInfo = _parseSubscriptionInfo(subInfoStr);
+        final subInfoHeader = headers['subscription-userinfo'] ?? headers['x-subscription-userinfo'];
+        if (subInfoHeader is String) {
+          subInfo = _parseSubscriptionInfo(subInfoHeader);
         }
 
         if (subInfo != null) {

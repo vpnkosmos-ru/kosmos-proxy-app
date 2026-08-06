@@ -9,11 +9,13 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
+import 'package:hiddify/features/cabinet/widget/cabinet_native_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
 import 'package:hiddify/features/intro/widget/intro_page.dart';
 import 'package:hiddify/features/log/overview/logs_page.dart';
 import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_page.dart';
 import 'package:hiddify/features/profile/details/profile_details_page.dart';
+import 'package:hiddify/features/profile/details/subscription_page.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/overview/profiles_page.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
@@ -27,6 +29,7 @@ import 'package:hiddify/features/settings/overview/sections/inbound_options_page
 import 'package:hiddify/features/settings/overview/sections/routing_options_page.dart';
 import 'package:hiddify/features/settings/overview/sections/tls_tricks_page.dart';
 import 'package:hiddify/features/settings/overview/settings_page.dart';
+import 'package:hiddify/features/settings/overview/settings_pin.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -35,8 +38,10 @@ part 'routing_config_notifier.g.dart';
 // each branch in go router has its own focus scope
 final branchesScope = <String, FocusScopeNode>{
   'home': FocusScopeNode(),
+  'cabinet': FocusScopeNode(),
   'profiles': FocusScopeNode(),
   'settings': FocusScopeNode(),
+  'help': FocusScopeNode(),
   'logs': FocusScopeNode(),
   'about': FocusScopeNode(),
 };
@@ -47,12 +52,12 @@ final loadingConfig = RoutingConfig(
 );
 
 String getNameOfBranch(bool isMobileBreakpoint, bool showProfilesAction, int index) => isMobileBreakpoint
-    ? ['home', 'settings'][index]
-    : ['home', if (showProfilesAction) 'profiles', 'settings', 'logs', 'about'][index];
+    ? ['home', 'cabinet', 'settings', 'help'][index]
+    : ['home', 'cabinet', if (showProfilesAction) 'profiles', 'settings', 'help', 'logs', 'about'][index];
 
 int getIndexOfBranch(bool isMobileBreakpoint, bool showProfilesAction, String name) => isMobileBreakpoint
-    ? ['home', 'settings'].indexOf(name)
-    : ['home', if (showProfilesAction) 'profiles', 'settings', 'logs', 'about'].indexOf(name);
+    ? ['home', 'cabinet', 'settings', 'help'].indexOf(name)
+    : ['home', 'cabinet', if (showProfilesAction) 'profiles', 'settings', 'help', 'logs', 'about'].indexOf(name);
 
 @Riverpod(keepAlive: true)
 class RoutingConfigNotifier extends _$RoutingConfigNotifier {
@@ -109,6 +114,8 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
             (ref.watch(hasAnyProfileProvider).value == false)) {
           // Prevent showing chainOptions while hasAnyProfile == false
           return '/settings';
+        } else if (state.matchedLocation.startsWith('/settings/') && !ref.read(settingsUnlockedProvider)) {
+          return '/settings';
         }
         return null;
       },
@@ -133,6 +140,12 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                       pageBuilder: (_, state) =>
                           customTransition(TransitionType.fade, state.pageKey, const ProxiesOverviewPage()),
                     ),
+                    GoRoute(
+                      name: 'subscription',
+                      path: 'subscription',
+                      pageBuilder: (_, state) =>
+                          customTransition(TransitionType.slide, state.pageKey, const SubscriptionPage()),
+                    ),
                     if (isMobileBreakpoint)
                       GoRoute(
                         name: 'profileDetails',
@@ -144,6 +157,18 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                         ),
                       ),
                   ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: <GoRoute>[
+                GoRoute(
+                  name: 'cabinet',
+                  path: '/cabinet',
+                  builder: (_, _) => FocusScope(
+                    node: branchesScope['cabinet'],
+                    child: const CabinetNativePage(section: CabinetNativeSection.cabinet),
+                  ),
                 ),
               ],
             ),
@@ -283,6 +308,18 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                       ),
                     ],
                   ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: <GoRoute>[
+                GoRoute(
+                  name: 'help',
+                  path: '/help',
+                  builder: (_, _) => FocusScope(
+                    node: branchesScope['help'],
+                    child: const CabinetNativePage(section: CabinetNativeSection.help),
+                  ),
                 ),
               ],
             ),

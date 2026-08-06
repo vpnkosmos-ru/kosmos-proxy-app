@@ -5,11 +5,10 @@ import 'package:hiddify/utils/utils.dart';
 abstract class Constants {
   static const appName = "Kosmos Proxy";
   static const websiteUrl = "https://vpnkosmos.ru/";
+  static const cabinetUrl = "https://lk.kosmosproxy.ru";
   static const githubUrl = websiteUrl;
   static const supportUrl = "https://vpnspacekpot.ru/cabinet/help";
-  // Mandatory upstream attribution is intentionally kept in the open-source
-  // notices entry only; no regular product screen links to Hiddify.
-  static const licenseUrl = "https://github.com/hiddify/hiddify-next?tab=License-1-ov-file#readme";
+  static const licenseUrl = "https://github.com/vpnkosmos-ru/kosmos-proxy-app/blob/main/LICENSE.md";
   // There is no public update feed. The update checker is intentionally
   // disabled, and these compatibility constants must never lead users away
   // from the official product site if an upstream integration is enabled.

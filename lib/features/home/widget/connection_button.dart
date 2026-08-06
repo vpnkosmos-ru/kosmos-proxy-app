@@ -11,7 +11,6 @@ import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/settings/notifier/config_option/config_option_notifier.dart';
-import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ConnectionButton extends HookConsumerWidget {
@@ -36,10 +35,10 @@ class ConnectionButton extends HookConsumerWidget {
 
     final label = switch (state) {
       _ConnectionVisualState.reconnect => t.connection.reconnect,
-      _ConnectionVisualState.connecting => t.connection.connecting,
-      _ConnectionVisualState.connected => t.connection.connected,
-      _ConnectionVisualState.disconnected => t.connection.tapToConnect,
-      _ConnectionVisualState.error => t.connection.tapToConnect,
+      _ConnectionVisualState.connecting => 'Ищем лучший маршрут…',
+      _ConnectionVisualState.connected => 'Подключено',
+      _ConnectionVisualState.disconnected => 'Нажмите для подключения',
+      _ConnectionVisualState.error => 'Нажмите для подключения',
     };
     final color = switch (state) {
       _ConnectionVisualState.connected => buttonTheme.connectedColor,
@@ -64,8 +63,7 @@ class ConnectionButton extends HookConsumerWidget {
         },
         AsyncData(value: Disconnected()) || AsyncError() => () async {
           if (ref.read(activeProfileProvider).valueOrNull == null) {
-            await ref.read(dialogNotifierProvider.notifier).showNoActiveProfile();
-            ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
+            await ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
             return;
           }
           if (await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) {
@@ -110,53 +108,61 @@ class _ConnectionButton extends StatelessWidget {
           button: true,
           enabled: enabled,
           label: label,
-          child: Container(
-            width: 188,
-            height: 188,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [color.withValues(alpha: .96), theme.colorScheme.secondary.withValues(alpha: .96)],
-              ),
-              boxShadow: [
-                BoxShadow(color: color.withValues(alpha: .28), blurRadius: 34, spreadRadius: 4, offset: const Offset(0, 14)),
-              ],
-            ),
-            child: Material(
-              key: const ValueKey('home_connection_button'),
-              type: MaterialType.transparency,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: enabled ? onTap : null,
-                child: Center(
-                  child: Container(
-                    width: 142,
-                    height: 142,
+          child:
+              Container(
+                    width: 188,
+                    height: 188,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: .17),
-                      border: Border.all(color: Colors.white.withValues(alpha: .56), width: 1.5),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [color.withValues(alpha: .96), theme.colorScheme.secondary.withValues(alpha: .96)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: .28),
+                          blurRadius: 34,
+                          spreadRadius: 4,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
                     ),
-                    padding: const EdgeInsets.all(38),
-                    child: Assets.images.logo.svg(
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    child: Material(
+                      key: const ValueKey('home_connection_button'),
+                      type: MaterialType.transparency,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: enabled ? onTap : null,
+                        child: Center(
+                          child: Container(
+                            width: 142,
+                            height: 142,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: .17),
+                              border: Border.all(color: Colors.white.withValues(alpha: .56), width: 1.5),
+                            ),
+                            padding: const EdgeInsets.all(38),
+                            child: const Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 54),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          )
-              .animate(target: animated ? 1 : 0, onPlay: (controller) => controller.repeat(reverse: true))
-              .scaleXY(begin: 1, end: 1.045, duration: 1800.ms, curve: Curves.easeInOut),
+                  )
+                  .animate(target: animated ? 1 : 0, onPlay: (controller) => controller.repeat(reverse: true))
+                  .scaleXY(begin: 1, end: 1.045, duration: 1800.ms, curve: Curves.easeInOut),
         ),
         const Gap(18),
         AnimatedText(label, style: theme.textTheme.titleLarge?.copyWith(color: color)),
         const Gap(4),
         Text(
-          connected ? 'Защита активна' : 'Нажмите, чтобы изменить состояние',
+          connected
+              ? 'Защита активна'
+              : label == 'Ищем лучший маршрут…'
+              ? 'Подбираем безопасное соединение'
+              : 'Нажмите для подключения',
           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],

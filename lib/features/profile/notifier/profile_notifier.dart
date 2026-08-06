@@ -11,12 +11,14 @@ import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/add/model/free_profiles_model.dart';
+import 'package:hiddify/features/profile/add/subscription_link.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/model/profile_failure.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
+import 'package:hiddify/features/subscription_expiry/subscription_notification_service.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -41,13 +43,12 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
           notification.showSuccessToast(t.pages.profiles.msg.save.success);
         case AsyncError(:final error):
           if (error case ProfileInvalidUrlFailure()) {
-            notification.showErrorToast(t.pages.profiles.msg.invalidUrl);
+            notification.showErrorToast('Используйте ссылку, полученную в личном кабинете Kosmos Proxy');
           } else if (error case ProfileCancelByUserFailure()) {
             return;
           } else {
-            ref
-                .read(dialogNotifierProvider.notifier)
-                .showCustomAlertFromErr(t.presentError(error, action: t.pages.profiles.msg.add.failure));
+            loggy.warning('subscription import failed: ${error.runtimeType}');
+            notification.showErrorToast('Не удалось загрузить подписку. Проверьте ссылку и интернет-соединение');
           }
       }
     });
@@ -68,7 +69,8 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
       // final markAsActive = activeProfile == null || ref.read(Preferences.markNewProfileActive);
       final TaskEither<ProfileFailure, Unit> task;
       if (LinkParser.parse(rawInput) case (final rs)?) {
-        loggy.debug("adding profile, url: [${rs.url}]");
+        // Subscription URLs contain user credentials. Never write them to logs.
+        loggy.debug('adding remote profile');
         task = _profilesRepo.upsertRemote(
           rs.url,
           userOverride: rs.name.isNotEmpty ? UserOverride(name: rs.name) : null,
@@ -81,11 +83,15 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
       return await task
           .match(
             (err) {
-              loggy.warning("failed to add profile", err);
+              loggy.warning('failed to add profile: ${err.runtimeType}');
               throw err;
             },
-            (_) {
+            (_) async {
+              if (isKosmosSubscriptionUrl(rawInput)) await ref.read(subscriptionUrlStoreProvider).save(rawInput);
               loggy.info("successfully added profile");
+              await ref
+                  .read(subscriptionNotificationServiceProvider)
+                  .refreshFromProfile(await ref.read(activeProfileProvider.future));
               return unit;
             },
           )
@@ -101,11 +107,16 @@ class AddProfileNotifier extends _$AddProfileNotifier with AppLogger {
       return await task
           .match(
             (err) {
-              loggy.warning("failed to add profile", err);
+              loggy.warning('failed to add profile: ${err.runtimeType}');
               throw err;
             },
-            (r) {
+            (r) async {
+              // Persist only after the remote response and config validation succeeded.
+              await ref.read(subscriptionUrlStoreProvider).save(url);
               loggy.info("successfully added profile, mark as active? [true]");
+              await ref
+                  .read(subscriptionNotificationServiceProvider)
+                  .refreshFromProfile(await ref.read(activeProfileProvider.future));
               return r;
             },
           )
@@ -145,11 +156,15 @@ class UpdateProfileNotifier extends _$UpdateProfileNotifier with AppLogger {
           .upsertRemote(profile.url)
           .match(
             (err) {
-              loggy.warning("failed to update profile", err);
+              loggy.warning('failed to update profile: ${err.runtimeType}');
               throw err;
             },
             (_) async {
+              if (isKosmosSubscriptionUrl(profile.url)) await ref.read(subscriptionUrlStoreProvider).save(profile.url);
               loggy.info('successfully updated profile');
+              await ref
+                  .read(subscriptionNotificationServiceProvider)
+                  .refreshFromProfile(await ref.read(activeProfileProvider.future));
 
               await ref.read(activeProfileProvider.future).then((active) async {
                 if (active != null && active.id == profile.id) {

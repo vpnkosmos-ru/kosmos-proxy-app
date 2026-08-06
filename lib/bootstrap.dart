@@ -22,8 +22,11 @@ import 'package:hiddify/features/chain/notifier/chain_profile_notifier.dart';
 import 'package:hiddify/features/log/data/log_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
+import 'package:hiddify/features/profile/model/profile_entity.dart';
+import 'package:hiddify/features/profile/add/subscription_link.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
+import 'package:hiddify/features/subscription_expiry/subscription_notification_service.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/hiddifycore/hiddify_core_service_provider.dart';
 import 'package:hiddify/riverpod_observer.dart';
@@ -85,10 +88,21 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
   Logger.bootstrap.info(appInfo.format());
 
   await _init("profile repository", () => container.read(profileRepositoryProvider.future));
+  await _init("subscription URL migration", () => container.read(subscriptionUrlStoreProvider).migrateLegacyValue());
 
   await _init("translations", () => container.read(translationsProvider.future));
 
-  await _safeInit("active profile", () => container.read(activeProfileProvider.future), timeout: 1000);
+  final activeProfile = await _safeInit(
+    "active profile",
+    () => container.read(activeProfileProvider.future),
+  );
+  // Existing remote profiles predate the canonical preference. Seed it once so
+  // an APK update preserves a valid Kosmos URL without exposing it in logs.
+  if (container.read(subscriptionUrlStoreProvider).value == null &&
+      activeProfile is RemoteProfileEntity &&
+      isKosmosSubscriptionUrl(activeProfile.url)) {
+    await container.read(subscriptionUrlStoreProvider).save(activeProfile.url);
+  }
   await _init(
     "chain profile extra security",
     () => container.read(chainProfileNotifierProvider(ChainType.extraSecurity).future),
@@ -98,6 +112,12 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
     () => container.read(chainProfileNotifierProvider(ChainType.unblocker).future),
   );
   await _safeInit("hiddify-core", () => container.read(hiddifyCoreServiceProvider).init());
+  await _safeInit('subscription notifications', () async {
+    final service = container.read(subscriptionNotificationServiceProvider);
+    await service.initialize();
+    await service.refreshFromProfile(activeProfile);
+    await service.reschedulePersisted();
+  });
 
   // Eagerly listen to activeProxyNotifierProvider to force synchronous evaluation in microtasks,
   // avoiding lazy build-phase flushes and sibling dependency collisions on the Home page.

@@ -15,11 +15,14 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/theme/app_theme.dart';
 import 'package:hiddify/core/theme/theme_preferences.dart';
 import 'package:hiddify/features/app_update/notifier/app_update_notifier.dart';
+import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/connection/widget/connection_wrapper.dart';
 import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_service_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profiles_update_notifier.dart';
 import 'package:hiddify/features/shortcut/shortcut_wrapper.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
+import 'package:hiddify/features/subscription_expiry/subscription_notification_service.dart';
+import 'package:hiddify/features/self_update/self_update_service.dart';
 import 'package:hiddify/features/window/widget/window_wrapper.dart';
 import 'package:hiddify/hiddifycore/hiddify_core_service_provider.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -40,12 +43,19 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
   void onPause(WidgetRef ref) {
     if (PlatformUtils.isDesktop) return;
     isOnPauseCalled = true;
+    ref.read(connectionNotifierProvider.notifier).onAppPaused();
     ref.read(hiddifyCoreServiceProvider).closeFront();
   }
 
   void onResume(WidgetRef ref) {
     // if (PlatformUtils.isDesktop) return;
     ref.read(hiddifyCoreServiceProvider).init();
+    // This is a read-only reconciliation after Android recreates/rebinds the
+    // activity-side channels. It must not reconnect a working VPN.
+    ref.read(connectionNotifierProvider.notifier).onAppResumed();
+    // Recreate deterministic alarm IDs after a timezone change while the app
+    // was backgrounded; no notification is replayed for elapsed times.
+    Future<void>(() => ref.read(subscriptionNotificationServiceProvider).reschedulePersisted());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (isOnPauseCalled && PlatformUtils.isAndroid) ref.invalidate(perAppProxyServiceProvider);
@@ -62,6 +72,16 @@ class App extends HookConsumerWidget with WidgetsBindingObserver, PresLogger {
     final theme = AppTheme(themeMode, locale.preferredFontFamily);
     final upgrader = ref.watch(upgraderProvider);
     final activeBreakpoint = Breakpoint(context).activeBreakpoint;
+    useEffect(() {
+      final sub = SubscriptionNotificationNavigation.routes.listen((route) => router.go(route));
+      return sub.cancel;
+    }, [router]);
+    useEffect(() {
+      // Non-blocking daily check. An unavailable future endpoint must never
+      // affect splash, VPN state, or ordinary app use.
+      Future<void>(() => ref.read(selfUpdateServiceProvider).check(manual: false));
+      return null;
+    }, const []);
 
     ref.listen(foregroundProfilesUpdateNotifierProvider, (_, _) {});
     if (PlatformUtils.isAndroid) ref.listen(perAppProxyServiceProvider, (_, _) {});

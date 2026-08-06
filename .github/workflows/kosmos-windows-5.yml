@@ -83,9 +83,20 @@ jobs:
       - name: Create portable ZIP and Inno Setup installer
         shell: pwsh
         run: |
+          choco install innosetup -y --no-progress
+          $innoDir = 'C:\Program Files (x86)\Inno Setup 6'
+          if (!(Test-Path "$innoDir\ISCC.exe")) { throw 'Inno Setup compiler was not installed' }
+          $env:INNO_SETUP_PATH = $innoDir
+          $env:PATH += ";$innoDir"
           dart pub global activate fastforge 0.6.12
           $env:PATH += ";$env:LOCALAPPDATA/Pub/Cache/bin"
-          fastforge package --platform windows --targets zip,exe --skip-clean --build-target lib/main.dart --build-dart-define portable=true
+          fastforge package --platform windows --targets zip,exe --skip-clean --build-target lib/main.dart --build-dart-define portable=true 2>&1 | Tee-Object -FilePath windows-package.log
+          $packageExit = $LASTEXITCODE
+          if ($packageExit -ne 0) {
+            $tail = ((Get-Content windows-package.log -Tail 35) -join ' | ') -replace '::', ':'
+            Write-Host "::error title=Windows package creation failed::$tail"
+            exit $packageExit
+          }
           New-Item -ItemType Directory -Force artifacts/windows | Out-Null
           $zip = Get-ChildItem dist -Recurse -Filter '*.zip' | Select-Object -First 1
           $exe = Get-ChildItem dist -Recurse -Filter '*.exe' | Where-Object { $_.Name -notmatch 'HiddifyCli' } | Select-Object -First 1
@@ -103,4 +114,5 @@ jobs:
             windows-sha256.txt
             windows-tests.log
             windows-build.log
+            windows-package.log
           if-no-files-found: error

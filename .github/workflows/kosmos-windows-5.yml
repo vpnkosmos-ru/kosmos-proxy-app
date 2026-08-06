@@ -58,7 +58,17 @@ jobs:
           if ($testExit -ne 0) { Write-Warning "Windows test suite failed ($testExit); see windows-tests.log" }
       - name: Build Windows release bundle
         shell: pwsh
-        run: flutter build windows --release
+        run: |
+          flutter build windows --release 2>&1 | Tee-Object -FilePath windows-build.log
+          $buildExit = $LASTEXITCODE
+          if ($buildExit -ne 0) {
+            # Put the compiler tail in a public check annotation as well as in
+            # the artifact, so a maintainer can diagnose a private-runner
+            # failure without granting log-read credentials.
+            $tail = ((Get-Content windows-build.log -Tail 35) -join ' | ') -replace '::', ':'
+            Write-Host "::error title=Windows release build failed::$tail"
+            exit $buildExit
+          }
       - name: Verify core and bundle
         shell: pwsh
         run: |
@@ -88,4 +98,6 @@ jobs:
             artifacts/windows/**
             windows-version.txt
             windows-sha256.txt
+            windows-tests.log
+            windows-build.log
           if-no-files-found: error

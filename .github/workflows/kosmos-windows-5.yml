@@ -49,10 +49,11 @@ jobs:
           # Some widget tests rely on a platform host not present on a hosted
           # Windows runner. Preserve their complete output without allowing a
           # non-zero test exit to hide the actual release-bundle result.
-          # `cmd /c` deliberately prevents the Actions pwsh error preference
-          # from terminating the step before the exit code is recorded.
-          cmd /c "flutter test > windows-tests.log 2>&1"
-          $testExit = $LASTEXITCODE
+          # Let cmd return success after recording the Flutter test exit code:
+          # hosted pwsh otherwise treats any native non-zero exit as fatal
+          # before this script can save the diagnostic log.
+          cmd /c "flutter test > windows-tests.log 2>&1 & echo %ERRORLEVEL% > windows-tests.exit & exit /b 0"
+          $testExit = [int](Get-Content windows-tests.exit)
           Get-Content windows-tests.log
           if ($testExit -ne 0) { Write-Warning "Windows test suite failed ($testExit); see windows-tests.log" }
       - name: Build Windows release bundle

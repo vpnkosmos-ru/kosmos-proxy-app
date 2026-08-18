@@ -11,6 +11,9 @@ on:
       channel:
         type: string
         default: "dev"
+      publish-release:
+        type: boolean
+        default: true
 
 env:
   IS_GITHUB_ACTIONS: 1
@@ -430,7 +433,7 @@ jobs:
 
   upload-release:
     permissions: write-all
-    if: ${{ inputs.upload-artifact && inputs.tag-name != 'draft' }}
+    if: ${{ inputs.upload-artifact && inputs.publish-release && inputs.tag-name != 'draft' }}
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -482,7 +485,7 @@ jobs:
 
   upload-to-testflight:
     needs: [build]
-    if: ${{ inputs.upload-artifact &&  inputs.tag-name != 'draft' }}
+    if: ${{ inputs.upload-artifact && inputs.publish-release && inputs.tag-name != 'draft' }}
     #if: ${{ inputs.upload-artifact }}
     runs-on: macOS-latest
     timeout-minutes: 30

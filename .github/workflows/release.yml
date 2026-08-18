@@ -29,4 +29,5 @@ jobs:
       upload-artifact: true
       tag-name: "${{ inputs.tag-name || github.ref_name }}"
       channel: "${{ github.event_name == 'workflow_dispatch' && 'prod' || github.ref_type == 'tag' && endsWith(github.ref_name, 'dev') && 'dev' || github.ref_type != 'tag' && 'dev' || 'prod' }}"
-      publish-release: "${{ github.event_name != 'workflow_dispatch' || inputs.publish-release }}"
+      # Device validation occurs after artifact download, before publication.
+      publish-release: "${{ github.event_name == 'workflow_dispatch' && inputs.publish-release }}"

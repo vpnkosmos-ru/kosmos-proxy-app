@@ -269,6 +269,7 @@ android-apk-release:
 	fastforge package \
 	  --platform android \
 	  --targets apk \
+	  --build-flavor=prod \
 	  --skip-clean \
 	  --build-target=$(TARGET) \
 	  --build-target-platform=android-arm,android-arm64,android-x64 \
@@ -279,6 +280,7 @@ android-aab-release:
 	fastforge package \
 	  --platform android \
 	  --targets aab \
+	  --build-flavor=prod \
 	  --skip-clean \
 	  --build-target=$(TARGET) \
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN) \

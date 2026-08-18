@@ -318,14 +318,14 @@ jobs:
           cp ./build/app/outputs/flutter-apk/*arm64-v8a*.apk out/${TARGET_NAME_apk}-arm64.apk || echo "no arm64 apk"
           cp ./build/app/outputs/flutter-apk/*armeabi-v7a*.apk out/${TARGET_NAME_apk}-arm7.apk || echo "no arm7 apk"
           cp ./build/app/outputs/flutter-apk/*x86_64*.apk out/${TARGET_NAME_apk}-x86_64.apk || echo "no x64 apk"
-          cp ./build/app/outputs/flutter-apk/app-release.apk out/${TARGET_NAME_apk}-universal.apk || echo "no universal apk"
+          cp ./build/app/outputs/flutter-apk/app-prod-release.apk out/${TARGET_NAME_apk}-universal.apk || echo "no universal apk"
 
       - name: Copy to out Android AAB
         if: matrix.platform == 'android-aab'
         run: |
           mkdir out
           ls -R ./build/app/outputs
-          cp ./build/app/outputs/bundle/release/app-release.aab out/hiddify-android-market.aab || echo "no aab"
+          cp ./build/app/outputs/bundle/prodRelease/app-prod-release.aab out/hiddify-android-market.aab || echo "no aab"
 
       - name: Copy to out unix
         if: startsWith(matrix.platform,'linux') || matrix.platform == 'macos' || matrix.platform == 'ios'

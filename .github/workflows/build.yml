@@ -49,8 +49,11 @@ jobs:
           channel: 'stable'
           cache: true
           
-      - name: Prepare
-        run: make linux-amd64-prepare
+      # Tests are pure Dart/Flutter tests and do not need a native Linux core.
+      # Preparing one here downloads an unrelated binary before any Android
+      # production job can start, which made release validation fail first.
+      - name: Prepare test dependencies
+        run: flutter pub get
       - name: Test
         run: flutter test
 

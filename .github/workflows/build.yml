@@ -53,11 +53,14 @@ jobs:
           channel: 'stable'
           cache: true
           
-      # Tests are pure Dart/Flutter tests and do not need a native Linux core.
-      # Preparing one here downloads an unrelated binary before any Android
-      # production job can start, which made release validation fail first.
+      # Tests do not need a native Linux core, but they do compile application
+      # code and therefore require the generated Dart sources normally made by
+      # common-prepare. Keep this independent of platform core downloads.
       - name: Prepare test dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          dart run slang
       - name: Test
         run: flutter test
 

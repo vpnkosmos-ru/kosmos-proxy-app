@@ -261,7 +261,15 @@ jobs:
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
-          make ${{ matrix.platform }}-release
+          if ! make ${{ matrix.platform }}-release > build-output.log 2>&1; then
+            # Keep a concise compiler tail visible even where full Actions logs
+            # are restricted, so a real Android build error can be corrected.
+            tail -n 60 build-output.log
+            while IFS= read -r line; do
+              echo "::error title=${{ matrix.platform }} build failed::$line"
+            done < <(tail -n 25 build-output.log)
+            exit 1
+          fi
 
       - name: Code Sign
         if: ${{ inputs.upload-artifact && startsWith(matrix.platform,'windows') }}

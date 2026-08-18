@@ -4,6 +4,7 @@ import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/features/proxy/model/ip_info_entity.dart' as oldipinfo;
 
+import 'package:hiddify/features/network/base_network_transport.dart';
 import 'package:hiddify/features/proxy/model/proxy_failure.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/hiddifycore/hiddify_core_service.dart';
@@ -16,6 +17,7 @@ abstract interface class ProxyRepository {
   TaskEither<ProxyFailure, oldipinfo.IpInfo> getCurrentIpInfo(CancelToken cancelToken);
   TaskEither<ProxyFailure, Unit> selectProxy(String groupTag, String outboundTag);
   TaskEither<ProxyFailure, Unit> urlTest(String groupTag);
+  Future<WifiSelectionPolicyResult> enforceBaseNetworkPolicy();
 }
 
 class ProxyRepositoryImpl with ExceptionHandler, InfraLogger implements ProxyRepository {
@@ -77,10 +79,71 @@ class ProxyRepositoryImpl with ExceptionHandler, InfraLogger implements ProxyRep
 
   @override
   TaskEither<ProxyFailure, Unit> selectProxy(String groupTag, String outboundTag) {
-    return exceptionHandler(
-      () => singbox.selectOutbound(groupTag, outboundTag).mapLeft(ProxyUnexpectedFailure.new).run(),
-      ProxyUnexpectedFailure.new,
-    );
+    return exceptionHandler(() async {
+      // This lower-layer guard is intentionally independent of the UI: a
+      // stale tap, saved selector or reconnect cannot send a restricted item
+      // to the core while the validated physical transport is Wi-Fi.
+      final transport = await readBaseNetworkTransport();
+      if (!isServerAllowedForTransport(outboundTag, transport, tag: outboundTag)) return right(unit);
+      final selected = await singbox.selectOutbound(groupTag, outboundTag).run();
+      return selected.mapLeft(ProxyUnexpectedFailure.new);
+    }, ProxyUnexpectedFailure.new);
+  }
+
+  @override
+  Future<WifiSelectionPolicyResult> enforceBaseNetworkPolicy() async {
+    if (await readBaseNetworkTransport() != BaseNetworkTransport.wifi) {
+      return WifiSelectionPolicyResult.allowed;
+    }
+    try {
+      final group = await singbox.watchGroup().first.timeout(const Duration(seconds: 2));
+      if (group == null) return WifiSelectionPolicyResult.allowed;
+      OutboundInfo? selected;
+      for (final item in group.items) {
+        if (item.tag == group.selected) {
+          selected = item;
+          break;
+        }
+      }
+      final selectedName = selected?.tagDisplay.isNotEmpty == true ? selected!.tagDisplay : group.selected;
+      if (isServerAllowedForTransport(
+        selectedName,
+        BaseNetworkTransport.wifi,
+        tag: group.selected,
+        type: selected?.type,
+      )) {
+        return WifiSelectionPolicyResult.allowed;
+      }
+      final candidates =
+          group.items
+              .where(
+                (item) =>
+                    !item.isGroup &&
+                    isServerAllowedForTransport(
+                      item.tagDisplay.isEmpty ? item.tag : item.tagDisplay,
+                      BaseNetworkTransport.wifi,
+                      tag: item.tag,
+                      type: item.type,
+                    ),
+              )
+              .toList()
+            ..sort((a, b) {
+              final aDelay = a.urlTestDelay <= 0 ? 1 << 30 : a.urlTestDelay;
+              final bDelay = b.urlTestDelay <= 0 ? 1 << 30 : b.urlTestDelay;
+              final compared = aDelay.compareTo(bDelay);
+              return compared != 0 ? compared : a.tag.compareTo(b.tag);
+            });
+      if (candidates.isEmpty) return WifiSelectionPolicyResult.noAllowedCandidate;
+      final selectResult = await singbox.selectOutbound(group.tag, candidates.first.tag).run();
+      return selectResult.isRight()
+          ? WifiSelectionPolicyResult.reselected
+          : WifiSelectionPolicyResult.noAllowedCandidate;
+    } catch (_) {
+      // No initialized core / no selector snapshot is not evidence that every
+      // server is forbidden. Let the normal connection bootstrap continue;
+      // once groups arrive the same policy validates the effective selection.
+      return WifiSelectionPolicyResult.allowed;
+    }
   }
 
   @override

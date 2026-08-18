@@ -1,9 +1,8 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/widget/shimmer_skeleton.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
-import 'package:hiddify/features/proxy/active/ip_widget.dart';
+import 'package:hiddify/features/proxy/model/outbound_display_name.dart';
 import 'package:hiddify/features/stats/widget/stats_card.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -23,34 +22,10 @@ class ConnectionStatsCard extends HookConsumerWidget {
         switch (activeProxy) {
           AsyncData(value: final proxy) => (
             label: const Icon(FluentIcons.arrow_routing_20_regular),
-            data: Text(proxy.tagDisplay),
+            data: Text(displayOutboundName(proxy.tagDisplay)),
             semanticLabel: null,
           ),
           _ => (label: const Icon(FluentIcons.arrow_routing_20_regular), data: const Text("..."), semanticLabel: null),
-        },
-        switch (activeProxy) {
-          AsyncData(value: final proxy) when proxy.ipinfo.ip.isNotEmpty => (
-            label: Row(
-              children: [
-                IPCountryFlag(countryCode: proxy.ipinfo.countryCode, size: 16),
-                // const Gap(4),
-                // OrganisationFlag(organization: proxy.ipinfo.org, size: 16),
-              ],
-            ),
-            data: IPText(
-              ip: proxy.ipinfo.ip,
-              onLongPress: () async {
-                ref.read(ipInfoNotifierProvider.notifier).refresh();
-              },
-              constrained: true,
-            ),
-            semanticLabel: null,
-          ),
-          _ => (
-            label: const Icon(FluentIcons.question_circle_20_regular),
-            data: const ShimmerSkeleton(widthFactor: .85, height: 14),
-            semanticLabel: null,
-          ),
         },
         // switch (ipInfo) {
         //   AsyncData(value: final info) => (

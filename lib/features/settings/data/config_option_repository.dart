@@ -143,16 +143,14 @@ abstract class ConfigOptions {
 
   static final connectionTestUrl = PreferencesNotifier.create<String, String>(
     "connection-test-url",
-    "http://captive.apple.com/hotspot-detect.html",
+    "https://connectivitycheck.gstatic.com/generate_204",
     possibleValues: List.of([
-      "http://connectivitycheck.gstatic.com/generate_204",
-      "http://www.gstatic.com/generate_204",
       "https://www.gstatic.com/generate_204",
       "https://redirector.googlevideo.com/generate_204",
-      "http://cp.cloudflare.com",
+      "https://cp.cloudflare.com/generate_204",
       "http://kernel.org",
       "http://detectportal.firefox.com",
-      "http://captive.apple.com/hotspot-detect.html",
+      "https://connectivitycheck.gstatic.com/generate_204",
       "https://1.1.1.1",
       "http://1.1.1.1",
     ]),

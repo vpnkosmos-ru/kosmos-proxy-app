@@ -17,10 +17,10 @@ import 'package:hiddify/utils/utils.dart';
 import 'package:loggy/loggy.dart';
 import 'package:rxdart/rxdart.dart';
 
-final _logger = Loggy('FFIHiddifyCoreService');
+final _logger = Loggy('KosmosCoreService');
 
 class CoreInterfaceMobile extends CoreInterface with InfraLogger {
-  static const channelPrefix = "com.hiddify.app";
+  static const channelPrefix = "ru.kosmosproxy.app";
   static const methodChannel = MethodChannel("$channelPrefix/method");
   static const statusChannel = EventChannel("$channelPrefix/service.status", JSONMethodCodec());
   static const alertsChannel = EventChannel("$channelPrefix/service.alerts", JSONMethodCodec());
@@ -96,7 +96,7 @@ class CoreInterfaceMobile extends CoreInterface with InfraLogger {
         options: ChannelOptions(credentials: channelOption),
       ),
     );
-    // await start("/sdcard/Android/data/app.hiddify.com/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
+    // await start("/sdcard/Android/data/ru.kosmosproxy.app/files/configs/cdc633e9-8cfc-4a67-948d-009f779a5c91.json", "hiddify");
     return "";
   }
 

@@ -1,16 +1,23 @@
 import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/bottom_sheets/bottom_sheets_notifier.dart';
+import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
+import 'package:hiddify/features/home/widget/connection_orbit_animation.dart';
+import 'package:hiddify/features/connection/model/connection_status.dart';
+import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/core/widget/kosmos_surface.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/widget/profile_tile.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
-import 'package:hiddify/gen/assets.gen.dart';
+import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
+import 'package:hiddify/utils/external_link.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class HomePage extends HookConsumerWidget {
@@ -21,14 +28,25 @@ class HomePage extends HookConsumerWidget {
     final theme = Theme.of(context);
     final t = ref.watch(translationsProvider).requireValue;
     final activeProfile = ref.watch(activeProfileProvider);
-    final hasProfile = ref.watch(hasAnyProfileProvider).value ?? false;
+    final hasProfiles = ref.watch(hasAnyProfileProvider);
+    final hasProfile = hasProfiles.value ?? false;
+    final addProfileOpened = useRef(false);
+    useEffect(() {
+      if (hasProfiles.valueOrNull == false && !addProfileOpened.value) {
+        addProfileOpened.value = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
+        });
+      }
+      return null;
+    }, [hasProfiles.valueOrNull]);
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
         title: Row(
           children: [
-            _BrandMark(size: 34),
+            const _BrandMark(size: 34),
             const Gap(10),
             Text(t.common.appTitle),
             const Gap(8),
@@ -73,7 +91,11 @@ class HomePage extends HookConsumerWidget {
                         margin: const EdgeInsets.only(bottom: 18),
                         color: theme.colorScheme.surface,
                       ),
-                    const _OrbitBackdrop(child: ConnectionButton()),
+                    _OrbitBackdrop(
+                      child: const ConnectionButton(),
+                      connectionStatus: ref.watch(connectionNotifierProvider),
+                      countryCode: ref.watch(activeProxyNotifierProvider).valueOrNull?.ipinfo.countryCode,
+                    ),
                     const Gap(8),
                     const ActiveProxyDelayIndicator(),
                     const Gap(20),
@@ -81,10 +103,10 @@ class HomePage extends HookConsumerWidget {
                     if (hasProfile) const Gap(12),
                     _HomeActions(
                       onServers: () => context.goNamed('proxies'),
-                      onProfiles: () => ref.read(bottomSheetsNotifierProvider.notifier).showProfilesOverview(),
+                      onProfiles: () => context.pushNamed('subscription'),
                     ),
                     const Gap(18),
-                    _HelpCard(onTap: () => context.goNamed('about')),
+                    _HelpCard(onTap: () => openExternalKosmosLink(context, Uri.parse(Constants.supportUrl))),
                   ],
                 ),
               ),
@@ -97,15 +119,19 @@ class HomePage extends HookConsumerWidget {
 }
 
 class _OrbitBackdrop extends StatelessWidget {
-  const _OrbitBackdrop({required this.child});
+  const _OrbitBackdrop({required this.child, required this.connectionStatus, this.countryCode});
 
   final Widget child;
+  final AsyncValue<ConnectionStatus> connectionStatus;
+  final String? countryCode;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SizedBox(
-      height: 280,
+      // Extra vertical room keeps the five 56–64dp planets and their threads
+      // clear of the button and the text on compact Samsung screens.
+      height: 336,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -130,8 +156,17 @@ class _OrbitBackdrop extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(top: 24, right: 52, child: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.tertiary, size: 26)),
-          child,
+          Positioned(
+            top: 24,
+            right: 52,
+            child: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.tertiary, size: 26),
+          ),
+          ConnectionOrbitAnimation(
+            connecting: connectionStatus.valueOrNull is Connecting,
+            connected: connectionStatus.valueOrNull is Connected,
+            countryCode: countryCode,
+            child: child,
+          ),
         ],
       ),
     );
@@ -174,7 +209,13 @@ class _HomeActions extends StatelessWidget {
 }
 
 class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.icon, required this.title, required this.subtitle, required this.color, required this.onTap});
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String title;
@@ -185,7 +226,8 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return KosmosSurface(
+      padding: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
@@ -263,9 +305,14 @@ class _BrandMark extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(size * .30),
-    child: Assets.images.logo.svg(width: size, height: size),
+  Widget build(BuildContext context) => SizedBox(
+    width: size,
+    height: size,
+    child: Image.asset(
+      'assets/branding-approved/kosmos_proxy_logo_1024.png',
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    ),
   );
 }
 
@@ -283,7 +330,11 @@ class AppVersionLabel extends HookConsumerWidget {
       child: Container(
         decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        child: Text(version, textDirection: TextDirection.ltr, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary)),
+        child: Text(
+          version,
+          textDirection: TextDirection.ltr,
+          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
+        ),
       ),
     );
   }

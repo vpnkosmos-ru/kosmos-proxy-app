@@ -11,7 +11,9 @@ import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/settings/notifier/config_option/config_option_notifier.dart';
-import 'package:hiddify/gen/assets.gen.dart';
+import 'package:hiddify/features/profile/add/subscription_link.dart';
+import 'package:hiddify/features/subscription_expiry/subscription_access_state.dart';
+import 'package:hiddify/utils/external_link.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ConnectionButton extends HookConsumerWidget {
@@ -24,6 +26,8 @@ class ConnectionButton extends HookConsumerWidget {
     final delay = ref.watch(activeProxyNotifierProvider).valueOrNull?.urlTestDelay ?? 0;
     final requiresReconnect = ref.watch(configOptionNotifierProvider).valueOrNull;
     final buttonTheme = Theme.of(context).extension<ConnectionButtonTheme>()!;
+    final profile = ref.watch(activeProfileProvider).valueOrNull;
+    final expired = subscriptionBlocksConnection(profile);
 
     final state = switch (connectionStatus) {
       AsyncData(value: Connected()) when requiresReconnect == true => _ConnectionVisualState.reconnect,
@@ -34,23 +38,27 @@ class ConnectionButton extends HookConsumerWidget {
       _ => _ConnectionVisualState.connecting,
     };
 
-    final label = switch (state) {
-      _ConnectionVisualState.reconnect => t.connection.reconnect,
-      _ConnectionVisualState.connecting => t.connection.connecting,
-      _ConnectionVisualState.connected => t.connection.connected,
-      _ConnectionVisualState.disconnected => t.connection.tapToConnect,
-      _ConnectionVisualState.error => t.connection.tapToConnect,
-    };
+    final label = expired
+        ? 'Оплатить доступ'
+        : switch (state) {
+            _ConnectionVisualState.reconnect => t.connection.reconnect,
+            _ConnectionVisualState.connecting => 'Ищем лучший маршрут…',
+            _ConnectionVisualState.connected => 'Подключено',
+            _ConnectionVisualState.disconnected => 'Нажмите для подключения',
+            _ConnectionVisualState.error => 'Нажмите для подключения',
+          };
     final color = switch (state) {
       _ConnectionVisualState.connected => buttonTheme.connectedColor,
       _ConnectionVisualState.connecting || _ConnectionVisualState.reconnect => buttonTheme.connectingColor,
       _ConnectionVisualState.error => Theme.of(context).colorScheme.error,
       _ConnectionVisualState.disconnected => buttonTheme.idleColor,
     };
-    final enabled = switch (connectionStatus) {
-      AsyncData(value: Connected()) || AsyncData(value: Disconnected()) || AsyncError() => true,
-      _ => false,
-    };
+    final enabled =
+        expired ||
+        switch (connectionStatus) {
+          AsyncData(value: Connected()) || AsyncData(value: Disconnected()) || AsyncError() => true,
+          _ => false,
+        };
 
     return _ConnectionButton(
       label: label,
@@ -58,28 +66,49 @@ class ConnectionButton extends HookConsumerWidget {
       enabled: enabled,
       animated: state == _ConnectionVisualState.connected || state == _ConnectionVisualState.connecting,
       connected: state == _ConnectionVisualState.connected,
-      onTap: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => () async {
-          await ref.read(connectionNotifierProvider.notifier).reconnect(await ref.read(activeProfileProvider.future));
-        },
-        AsyncData(value: Disconnected()) || AsyncError() => () async {
-          if (ref.read(activeProfileProvider).valueOrNull == null) {
-            await ref.read(dialogNotifierProvider.notifier).showNoActiveProfile();
-            ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
-            return;
-          }
-          if (await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) {
-            await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-          }
-        },
-        AsyncData(value: Connected()) => () async {
-          await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-        },
-        _ => () {},
-      },
+      onTap: expired
+          ? () => _showExpiredPaywall(context)
+          : switch (connectionStatus) {
+              AsyncData(value: Connected()) when requiresReconnect == true => () async {
+                await ref
+                    .read(connectionNotifierProvider.notifier)
+                    .reconnect(await ref.read(activeProfileProvider.future));
+              },
+              AsyncData(value: Disconnected()) || AsyncError() => () async {
+                if (ref.read(activeProfileProvider).valueOrNull == null) {
+                  await ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
+                  return;
+                }
+                if (await ref.read(dialogNotifierProvider.notifier).showExperimentalFeatureNotice()) {
+                  await ref.read(connectionNotifierProvider.notifier).toggleConnection();
+                }
+              },
+              AsyncData(value: Connected()) => () async {
+                await ref.read(connectionNotifierProvider.notifier).toggleConnection();
+              },
+              _ => () {},
+            },
     );
   }
 }
+
+Future<void> _showExpiredPaywall(BuildContext context) => showDialog<void>(
+  context: context,
+  builder: (dialogContext) => AlertDialog(
+    title: const Text('Оплатите подписку'),
+    content: const Text('Доступ закончился. Продлите подписку, чтобы снова подключиться.'),
+    actions: [
+      TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Позже')),
+      FilledButton(
+        onPressed: () async {
+          Navigator.of(dialogContext).pop();
+          await openExternalKosmosLink(context, kosmosCabinetUri);
+        },
+        child: const Text('Оплатить доступ'),
+      ),
+    ],
+  ),
+);
 
 enum _ConnectionVisualState { disconnected, connecting, connected, reconnect, error }
 
@@ -110,53 +139,61 @@ class _ConnectionButton extends StatelessWidget {
           button: true,
           enabled: enabled,
           label: label,
-          child: Container(
-            width: 188,
-            height: 188,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [color.withValues(alpha: .96), theme.colorScheme.secondary.withValues(alpha: .96)],
-              ),
-              boxShadow: [
-                BoxShadow(color: color.withValues(alpha: .28), blurRadius: 34, spreadRadius: 4, offset: const Offset(0, 14)),
-              ],
-            ),
-            child: Material(
-              key: const ValueKey('home_connection_button'),
-              type: MaterialType.transparency,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: enabled ? onTap : null,
-                child: Center(
-                  child: Container(
-                    width: 142,
-                    height: 142,
+          child:
+              Container(
+                    width: 188,
+                    height: 188,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: .17),
-                      border: Border.all(color: Colors.white.withValues(alpha: .56), width: 1.5),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [color.withValues(alpha: .96), theme.colorScheme.secondary.withValues(alpha: .96)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: .28),
+                          blurRadius: 34,
+                          spreadRadius: 4,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
                     ),
-                    padding: const EdgeInsets.all(38),
-                    child: Assets.images.logo.svg(
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    child: Material(
+                      key: const ValueKey('home_connection_button'),
+                      type: MaterialType.transparency,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: enabled ? onTap : null,
+                        child: Center(
+                          child: Container(
+                            width: 142,
+                            height: 142,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: .17),
+                              border: Border.all(color: Colors.white.withValues(alpha: .56), width: 1.5),
+                            ),
+                            padding: const EdgeInsets.all(38),
+                            child: const Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 54),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          )
-              .animate(target: animated ? 1 : 0, onPlay: (controller) => controller.repeat(reverse: true))
-              .scaleXY(begin: 1, end: 1.045, duration: 1800.ms, curve: Curves.easeInOut),
+                  )
+                  .animate(target: animated ? 1 : 0, onPlay: (controller) => controller.repeat(reverse: true))
+                  .scaleXY(begin: 1, end: 1.045, duration: 1800.ms, curve: Curves.easeInOut),
         ),
         const Gap(18),
         AnimatedText(label, style: theme.textTheme.titleLarge?.copyWith(color: color)),
         const Gap(4),
         Text(
-          connected ? 'Защита активна' : 'Нажмите, чтобы изменить состояние',
+          connected
+              ? 'Защита активна'
+              : label == 'Ищем лучший маршрут…'
+              ? 'Подбираем безопасное соединение'
+              : 'Нажмите для подключения',
           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],

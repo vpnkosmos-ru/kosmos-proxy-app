@@ -61,6 +61,9 @@ class ProfilesNotifier extends _$ProfilesNotifier with AppLogger {
             throw err;
           },
           (_) async {
+            if (profile is RemoteProfileEntity) {
+              await ref.read(subscriptionUrlStoreProvider).removeIfMatches(profile.url);
+            }
             loggy.info('successfully deleted profile, was active? [${profile.active}]');
             final t = ref.read(translationsProvider).requireValue;
             ref.read(inAppNotificationControllerProvider).showSuccessToast(t.pages.profiles.msg.delete.success);

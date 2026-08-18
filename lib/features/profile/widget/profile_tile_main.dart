@@ -18,6 +18,7 @@ class ProfileTileMain extends HookConsumerWidget {
   static const verifiedDomains = [
     'vpnkosmos.ru',
     'vpnspacekpot.ru',
+    'vpnspacekpot.online',
     'vpnkosmos.taplink.ws',
     // 't.me',
     // 'telegram.me',
@@ -30,6 +31,7 @@ class ProfileTileMain extends HookConsumerWidget {
     'https://vpnkosmos.ru/',
     'https://vpnspacekpot.ru/cabinet/help',
     'https://vpnspacekpot.ru/rules',
+    'https://vpnspacekpot.online/cabinet/help',
     'https://vpnkosmos.taplink.ws/',
   ];
   Future<void> _launchUrlWithCheck(BuildContext context, WidgetRef ref, String url) async {
@@ -185,7 +187,9 @@ class ProfileTileMain extends HookConsumerWidget {
     if (host.endsWith('facebook.com')) {
       return FontAwesomeIcons.facebook;
     }
-    if (host.endsWith('vpnkosmos.ru') || host.endsWith('vpnspacekpot.ru') ||
+    if (host.endsWith('vpnkosmos.ru') ||
+        host.endsWith('vpnspacekpot.ru') ||
+        host.endsWith('vpnspacekpot.online') ||
         host.endsWith('vpnkosmos.taplink.ws')) {
       return FluentIcons.globe_24_regular;
     }
@@ -208,7 +212,9 @@ class ProfileTileMain extends HookConsumerWidget {
     if (host.endsWith('facebook.com')) {
       return uri.pathSegments.lastWhere((e) => e.isNotEmpty, orElse: () => '');
     }
-    if (host.endsWith('vpnkosmos.ru') || host.endsWith('vpnspacekpot.ru') ||
+    if (host.endsWith('vpnkosmos.ru') ||
+        host.endsWith('vpnspacekpot.ru') ||
+        host.endsWith('vpnspacekpot.online') ||
         host.endsWith('vpnkosmos.taplink.ws')) {
       return "Kosmos Proxy";
     }

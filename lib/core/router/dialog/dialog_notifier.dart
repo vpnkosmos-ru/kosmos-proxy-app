@@ -3,11 +3,11 @@ import 'package:hiddify/core/preferences/actions_at_closing.dart';
 import 'package:hiddify/core/router/dialog/widgets/action_at_closing_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/chain_license_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/confirmation_dialog.dart';
+import 'package:hiddify/core/router/dialog/widgets/connection_failed_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/custom_alert_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/experimental_feature_notice.dart';
 import 'package:hiddify/core/router/dialog/widgets/free_profile_consent_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/new_version_dialog.dart';
-import 'package:hiddify/core/router/dialog/widgets/no_active_profile_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/ok_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/proxy_info_dialog.dart';
 import 'package:hiddify/core/router/dialog/widgets/save_dialog.dart';
@@ -128,9 +128,12 @@ class DialogNotifier extends _$DialogNotifier {
     return true;
   }
 
-  Future<void> showNoActiveProfile() async {
-    return await _show<void>(const NoActiveProfileDialog());
-  }
+  Future<ConnectionFailureAction?> showConnectionFailure({
+    bool networkLost = false,
+    bool canUpdateSubscription = false,
+  }) async => await _show<ConnectionFailureAction>(
+    ConnectionFailedDialog(networkLost: networkLost, canUpdateSubscription: canUpdateSubscription),
+  );
 
   Future<bool> showFreeProfileConsent({required String title, required String consent}) async {
     return await _show<bool?>(FreeProfileConsentDialog(title: title, consent: consent)) ?? false;

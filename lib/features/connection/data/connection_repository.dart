@@ -5,6 +5,8 @@ import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/features/connection/model/connection_failure.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
+import 'package:hiddify/features/network/base_network_transport.dart';
+import 'package:hiddify/features/network/wifi_outbound_config_policy.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
@@ -80,8 +82,10 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   @override
   TaskEither<ConnectionFailure, Unit> connect(ProfileEntity activeProfile, bool disableMemoryLimit) => setup().flatMap(
     (_) => applyConfigOption(activeProfile).flatMap(
-      (_) => singbox.start(profilePathResolver.file(activeProfile.id).path, activeProfile.name, disableMemoryLimit),
-      // .mapLeft(UnexpectedConnectionFailure.new),
+      (_) => TaskEither.tryCatch(
+        () => _runtimeProfilePath(activeProfile),
+        (error, stackTrace) => ConnectionFailure.unexpected(error, stackTrace),
+      ).flatMap((path) => singbox.start(path, activeProfile.name, disableMemoryLimit)),
     ),
   );
 
@@ -91,10 +95,29 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   @override
   TaskEither<ConnectionFailure, Unit> reconnect(ProfileEntity activeProfile, bool disableMemoryLimit) =>
       applyConfigOption(activeProfile).flatMap(
-        (_) => singbox
-            .restart(profilePathResolver.file(activeProfile.id).path, activeProfile.name, disableMemoryLimit)
-            .mapLeft(UnexpectedConnectionFailure.new),
+        (_) =>
+            TaskEither.tryCatch(
+              () => _runtimeProfilePath(activeProfile),
+              (error, stackTrace) => ConnectionFailure.unexpected(error, stackTrace),
+            ).flatMap(
+              (path) => singbox
+                  .restart(path, activeProfile.name, disableMemoryLimit)
+                  .mapLeft(UnexpectedConnectionFailure.new),
+            ),
       );
+
+  /// Builds a separate runtime config. This is deliberately done immediately
+  /// before each start/restart, after the validated physical transport has
+  /// been read, so a VPN overlay can never change the decision.
+  Future<String> _runtimeProfilePath(ProfileEntity profile) async {
+    final source = profilePathResolver.file(profile.id);
+    final runtime = profilePathResolver.runtimeFile(profile.id);
+    final transport = await readBaseNetworkTransport();
+    final config = await source.readAsString();
+    final runtimeConfig = prepareRuntimeProfileConfig(config, transport);
+    await runtime.writeAsString(runtimeConfig, flush: true);
+    return runtime.path;
+  }
 
   @visibleForTesting
   TaskEither<ConnectionFailure, Unit> applyConfigOption(ProfileEntity prof) =>

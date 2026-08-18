@@ -14,4 +14,8 @@ class ProfilePathResolver {
   }
 
   File tempFile(String fileName) => file("$fileName.tmp");
+
+  /// Runtime copy used for transport-specific candidate filtering.
+  /// The downloaded subscription file is never modified.
+  File runtimeFile(String fileName) => File(p.join(directory.path, "$fileName.runtime.json"));
 }

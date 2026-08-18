@@ -18,7 +18,7 @@ import 'package:loggy/loggy.dart';
 
 import 'package:path/path.dart' as p;
 
-final _logger = Loggy('HiddifyCoreFFI');
+final _logger = Loggy('KosmosCoreFFI');
 typedef StopFunc = Pointer<Utf8> Function();
 typedef StopFuncDart = Pointer<Utf8> Function();
 
@@ -123,11 +123,22 @@ class CoreInterfaceDesktop extends CoreInterface with InfraLogger {
 
   @override
   Future<bool> restart(String path, String name) async {
-    return false;
+    final configPath = path.toNativeUtf8().cast<Char>();
+    try {
+      final result = _box.restart(configPath, 0);
+      final error = result.cast<Utf8>().toDartString();
+      _box.freeString(result);
+      return error.isEmpty;
+    } finally {
+      malloc.free(configPath);
+    }
   }
 
   @override
   Future<bool> stop() async {
-    return false;
+    final result = _box.stop();
+    final error = result.cast<Utf8>().toDartString();
+    _box.freeString(result);
+    return error.isEmpty;
   }
 }

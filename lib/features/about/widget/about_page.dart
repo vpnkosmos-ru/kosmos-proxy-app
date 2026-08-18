@@ -10,7 +10,6 @@ import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/app_update/notifier/app_update_notifier.dart';
 import 'package:hiddify/features/app_update/notifier/app_update_state.dart';
-import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -28,7 +27,9 @@ class AboutPage extends HookConsumerWidget {
       if (!context.mounted) return;
       switch (next) {
         case AppUpdateStateAvailable(:final versionInfo) || AppUpdateStateIgnored(:final versionInfo):
-          await ref.read(dialogNotifierProvider.notifier).showNewVersion(currentVersion: appInfo.presentVersion, newVersion: versionInfo, canIgnore: false);
+          await ref
+              .read(dialogNotifierProvider.notifier)
+              .showNewVersion(currentVersion: appInfo.presentVersion, newVersion: versionInfo, canIgnore: false);
         case AppUpdateStateError(:final error):
           CustomToast.error(t.presentShortError(error)).show(context);
         case AppUpdateStateNotAvailable():
@@ -58,7 +59,15 @@ class AboutPage extends HookConsumerWidget {
               padding: const EdgeInsets.all(22),
               child: Row(
                 children: [
-                  ClipRRect(borderRadius: BorderRadius.circular(22), child: Assets.images.logo.svg(width: 74, height: 74)),
+                  Container(
+                    width: 74,
+                    height: 74,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Icon(Icons.public_rounded, color: theme.colorScheme.primary, size: 42),
+                  ),
                   const Gap(18),
                   Expanded(
                     child: Column(
@@ -68,7 +77,10 @@ class AboutPage extends HookConsumerWidget {
                         const Gap(5),
                         Text('${t.common.version} ${appInfo.presentVersion}', style: theme.textTheme.bodyMedium),
                         const Gap(10),
-                        Text('Быстро. Безопасно. Без границ.', style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary)),
+                        Text(
+                          'Быстро. Безопасно. Без границ.',
+                          style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
+                        ),
                       ],
                     ),
                   ),
@@ -79,9 +91,18 @@ class AboutPage extends HookConsumerWidget {
           const Gap(18),
           _SectionTitle('Космос Proxy'),
           _AboutLink(icon: Icons.language_rounded, title: 'Официальный сайт', url: Constants.websiteUrl),
-          _AboutLink(icon: Icons.support_agent_rounded, title: 'Поддержка', url: Constants.supportUrl, accent: theme.colorScheme.tertiary),
+          _AboutLink(
+            icon: Icons.support_agent_rounded,
+            title: 'Поддержка',
+            url: Constants.supportUrl,
+            accent: theme.colorScheme.tertiary,
+          ),
           _AboutLink(icon: Icons.send_rounded, title: t.pages.about.telegramChannel, url: Constants.telegramChannelUrl),
-          _AboutLink(icon: Icons.description_outlined, title: t.pages.about.termsAndConditions, url: Constants.termsAndConditionsUrl),
+          _AboutLink(
+            icon: Icons.description_outlined,
+            title: t.pages.about.termsAndConditions,
+            url: Constants.termsAndConditionsUrl,
+          ),
           const Gap(18),
           _SectionTitle('Приложение'),
           if (appInfo.release.allowCustomUpdateChecker)
@@ -89,7 +110,11 @@ class AboutPage extends HookConsumerWidget {
               icon: Icons.system_update_alt_rounded,
               title: t.pages.about.checkForUpdate,
               trailing: switch (appUpdate) {
-                AppUpdateStateChecking() => const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+                AppUpdateStateChecking() => const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
                 _ => const Icon(FluentIcons.arrow_sync_24_regular),
               },
               onTap: () async => await ref.read(appUpdateNotifierProvider.notifier).check(),
@@ -101,7 +126,11 @@ class AboutPage extends HookConsumerWidget {
               trailing: const Icon(FluentIcons.open_24_regular),
               onTap: () async => await UriUtils.tryLaunch(ref.read(appDirectoriesProvider).requireValue.workingDir.uri),
             ),
-          _AboutLink(icon: Icons.privacy_tip_outlined, title: t.pages.about.privacyPolicy, url: Constants.privacyPolicyUrl),
+          _AboutLink(
+            icon: Icons.privacy_tip_outlined,
+            title: t.pages.about.privacyPolicy,
+            url: Constants.privacyPolicyUrl,
+          ),
           const Gap(18),
           _SectionTitle('Юридическая информация'),
           _AboutLink(icon: Icons.code_rounded, title: 'Лицензии открытого ПО', url: Constants.licenseUrl),
@@ -117,7 +146,10 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(6, 0, 0, 9),
-    child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+    child: Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    ),
   );
 }
 
@@ -138,7 +170,13 @@ class _AboutLink extends StatelessWidget {
 }
 
 class _AboutAction extends StatelessWidget {
-  const _AboutAction({required this.icon, required this.title, required this.trailing, required this.onTap, this.accent});
+  const _AboutAction({
+    required this.icon,
+    required this.title,
+    required this.trailing,
+    required this.onTap,
+    this.accent,
+  });
   final IconData icon;
   final String title;
   final Widget trailing;

@@ -50,14 +50,18 @@ if (keystorePropertiesFile.exists()) {
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')?: '1'
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
+// Flutter requires a three-part SemVer in pubspec. Keep the public Android
+// release label compact for intentional major/minor releases (5.0, not 5.0.0).
+def androidVersionName = flutterVersionName.replaceAll('\\.0$', '')
 
 android {
-    namespace 'com.hiddify.hiddify'
-    testNamespace "test.com.hiddify.hiddify"
+    namespace 'ru.kosmosproxy.app'
+    testNamespace "test.ru.kosmosproxy.app"
     compileSdkVersion 36
     ndkVersion "28.2.13676358"
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -71,12 +75,26 @@ android {
     }
 
     defaultConfig {
-        applicationId "app.hiddify.com"
+        applicationId "ru.kosmosproxy.app"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        versionName androidVersionName
         multiDexEnabled true
+    }
+
+    // `mock` is deliberately a separate developer-only variant.  It has the
+    // same package name and release signing identity so the Android package
+    // installer path can be tested through `adb reverse`, while the normal
+    // `prodRelease` variant keeps clear-text traffic disabled.
+    flavorDimensions "kosmosEnvironment"
+    productFlavors {
+        prod {
+            dimension "kosmosEnvironment"
+        }
+        mock {
+            dimension "kosmosEnvironment"
+        }
     }
 
     splits {
@@ -103,6 +121,11 @@ android {
 
     buildTypes {
         release {
+            // The project contains a very large generated gRPC/core graph. R8
+            // optimization on AGP 8.6 can consume unbounded CPU for this graph;
+            // disable shrinking rather than shipping a stalled/partial build.
+            minifyEnabled false
+            shrinkResources false
             if (hasKeyStore) {
                 signingConfig signingConfigs.release
             } else {
@@ -117,6 +140,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig true
         viewBinding true
         aidl true
     }
@@ -134,12 +158,17 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
 
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'androidx.core:core-ktx:1.16.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.7'
+    // Independent APK Signature Scheme v2 verifier used before a downloaded
+    // archive is offered to Package Installer. PackageManager's archive
+    // signing API is unreliable for an APK in Android 10 private storage.
+    implementation 'com.android.tools.build:apksig:8.6.0'
     implementation "androidx.compose.ui:ui:1.7.8"
     implementation("com.squareup.wire:wire-grpc-client:5.3.1")
 

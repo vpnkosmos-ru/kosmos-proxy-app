@@ -12,11 +12,15 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
 
@@ -25,13 +29,31 @@
         tools:ignore="QueryAllPackagesPermission" />
 
     <application
-        android:name=".Application"
+        android:name="ru.kosmosproxy.app.Application"
         android:banner="@mipmap/ic_banner"
         android:icon="@mipmap/ic_launcher"
         android:label="Kosmos Proxy"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_file_paths" />
+        </provider>
+        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false" />
+        <receiver android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" android:exported="false" />
+        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
         <meta-data
             android:name="flutter_deeplinking_enabled"
@@ -42,7 +64,7 @@
             android:resource="@xml/shortcuts" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="ru.kosmosproxy.app.MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:exported="true"
             android:hardwareAccelerated="true"
@@ -74,7 +96,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="hiddify" />
                 <data android:scheme="v2ray" />
                 <data android:scheme="v2rayn" />
                 <data android:scheme="v2rayng" />
@@ -94,7 +115,7 @@
         </activity>
 
         <activity
-            android:name=".ShortcutActivity"
+            android:name="ru.kosmosproxy.app.ShortcutActivity"
             android:excludeFromRecents="true"
             android:exported="true"
             android:label="@string/quick_toggle"
@@ -106,7 +127,7 @@
         </activity>
 
         <service
-            android:name=".bg.TileService"
+            android:name="ru.kosmosproxy.app.bg.TileService"
             android:directBootAware="true"
             android:exported="true"
             android:icon="@drawable/ic_stat_logo"
@@ -120,7 +141,7 @@
                 android:value="true" />
         </service>
         <service
-            android:name=".bg.VPNService"
+            android:name="ru.kosmosproxy.app.bg.VPNService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_VPN_SERVICE">
@@ -134,7 +155,7 @@
                 android:value="true"/>
         </service>
         <service
-            android:name=".bg.ProxyService"
+            android:name="ru.kosmosproxy.app.bg.ProxyService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property

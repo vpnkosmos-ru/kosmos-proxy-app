@@ -16,6 +16,7 @@ part 'bottom_sheets_notifier.g.dart';
 
 @riverpod
 class BottomSheetsNotifier extends _$BottomSheetsNotifier {
+  bool _isAddProfileOpen = false;
   @override
   void build() {}
 
@@ -46,20 +47,26 @@ class BottomSheetsNotifier extends _$BottomSheetsNotifier {
   }
 
   Future<void> showAddProfile({String? url, bool triggeredByDeepLink = false}) async {
-    if (url != null && triggeredByDeepLink) {
-      // Preventing Zero-click SSRF
-      final t = ref.watch(translationsProvider).requireValue;
-      final isConfirmed = await ref
-          .read(dialogNotifierProvider.notifier)
-          .showConfirmation(
-            title: t.dialogs.confirmation.addProfileByDeepLinkWarning.title,
-            message: t.dialogs.confirmation.addProfileByDeepLinkWarning.message(host: Uri.parse(url).host),
-          );
-      if (isConfirmed) {
+    if (_isAddProfileOpen) return;
+    _isAddProfileOpen = true;
+    try {
+      if (url != null && triggeredByDeepLink) {
+        // Preventing Zero-click SSRF
+        final t = ref.watch(translationsProvider).requireValue;
+        final isConfirmed = await ref
+            .read(dialogNotifierProvider.notifier)
+            .showConfirmation(
+              title: t.dialogs.confirmation.addProfileByDeepLinkWarning.title,
+              message: t.dialogs.confirmation.addProfileByDeepLinkWarning.message(host: Uri.parse(url).host),
+            );
+        if (isConfirmed) {
+          await _show(isScrollControlled: true, child: AddProfileModal(url: url));
+        }
+      } else {
         await _show(isScrollControlled: true, child: AddProfileModal(url: url));
       }
-    } else {
-      await _show(isScrollControlled: true, child: AddProfileModal(url: url));
+    } finally {
+      _isAddProfileOpen = false;
     }
   }
 

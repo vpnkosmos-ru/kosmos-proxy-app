@@ -1,13 +1,11 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/core/model/failures.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/bottom_sheets/bottom_sheets_notifier.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
@@ -61,11 +59,15 @@ class ProfileTile extends HookConsumerWidget {
       // elevation: effectiveElevation,
       margin: margin,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: profile.active ? theme.colorScheme.primary.withValues(alpha: .45) : theme.colorScheme.outlineVariant),
+        side: BorderSide(
+          color: profile.active ? theme.colorScheme.primary.withValues(alpha: .45) : theme.colorScheme.outlineVariant,
+        ),
         borderRadius: const BorderRadius.all(Radius.circular(24)),
       ),
       // color: color ?? theme.colorScheme.secondaryContainer,
-      color: color ?? (profile.active ? theme.colorScheme.primaryContainer.withValues(alpha: .42) : theme.colorScheme.surface),
+      color:
+          color ??
+          (profile.active ? theme.colorScheme.primaryContainer.withValues(alpha: .42) : theme.colorScheme.surface),
       elevation: 0,
 
       // shadowColor: Colors.transparent,
@@ -251,61 +253,20 @@ class ProfileActionsMenu extends HookConsumerWidget {
           },
         ),
       AdaptiveMenuItem(
-        title: t.common.share,
-        leadingIcon: Icon(AdaptiveIcon(context).share),
-        subItems: [
-          if (profile case RemoteProfileEntity(:final url, :final name)) ...[
-            AdaptiveMenuItem(
-              title: t.pages.profiles.share.urlToClipboard,
-              onTap: () async {
-                final link = LinkParser.generateSubShareLink(url, name);
-                if (link.isNotEmpty) {
-                  await Clipboard.setData(ClipboardData(text: link));
-                  if (context.mounted) {
-                    ref
-                        .read(inAppNotificationControllerProvider)
-                        .showSuccessToast(t.common.msg.export.clipboard.success);
-                  }
-                }
-              },
-            ),
-            AdaptiveMenuItem(
-              title: t.pages.profiles.share.showUrlQr,
-              onTap: () async {
-                final link = LinkParser.generateSubShareLink(url, name);
-                if (link.isNotEmpty) {
-                  await ref.read(dialogNotifierProvider.notifier).showQrCode(link, message: name);
-                }
-              },
-            ),
-          ],
-          AdaptiveMenuItem(
-            title: t.pages.profiles.share.jsonToClipboard,
-            onTap: () async => await ref.read(profilesNotifierProvider.notifier).exportConfigToClipboard(profile),
-          ),
-        ],
-      ),
-      AdaptiveMenuItem(
-        leadingIcon: const Icon(Icons.edit_rounded),
-        title: t.common.edit,
-        onTap: () {
-          if (Breakpoint(context).isMobile()) context.pop();
-          context.goNamed('profileDetails', pathParameters: {'id': profile.id});
-        },
-      ),
-      // if (!profile.active)
-      AdaptiveMenuItem(
         leadingIcon: const Icon(Icons.delete_outline_rounded),
         title: t.common.delete,
         onTap: () async => await ref
             .read(dialogNotifierProvider.notifier)
             .showConfirmation(
-              title: t.dialogs.confirmation.profile.delete.title,
-              message: t.dialogs.confirmation.profile.delete.msg,
+              title: 'Удалить подписку?',
+              message:
+                  'Серверы и данные этой подписки будут удалены с устройства. Повторно добавить её можно по ссылке из личного кабинета.',
+              positiveBtnTxt: 'Удалить',
             )
             .then((deleteConfirmed) async {
               if (!deleteConfirmed) return;
               await ref.read(profilesNotifierProvider.notifier).deleteProfile(profile);
+              if (context.mounted) await ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile();
             }),
       ),
     ];

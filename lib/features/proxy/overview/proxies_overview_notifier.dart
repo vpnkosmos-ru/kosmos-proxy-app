@@ -7,6 +7,7 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/network/base_network_transport.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
 import 'package:hiddify/features/proxy/model/proxy_failure.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
@@ -60,6 +61,7 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
   Stream<OutboundGroup?> build() {
     ref.disposeDelay(const Duration(seconds: 15));
     final serviceRunning = ref.watch(serviceRunningProvider);
+    ref.watch(baseNetworkTransportProvider);
     if (!serviceRunning) {
       return Stream.error(const ServiceNotRunning());
     }
@@ -164,7 +166,20 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
       }),
     };
     final items = <OutboundInfo>[];
-    for (final item in sortedItems) {
+    for (final item in sortedItems.where((item) {
+      final displayName = item.tagDisplay.isEmpty ? item.tag : item.tagDisplay;
+      if (!isUserConnectableOutbound(tag: item.tag, type: item.type, displayName: displayName)) return false;
+      // A selector is useful only while its effective child is a real VPN
+      // outbound. A stale core selection of DIRECT is hidden instead of
+      // presented as a server; the runtime profile rebuild removes it before
+      // the next start/URLTest.
+      if (item.isGroup &&
+          item.groupSelectedTag.isNotEmpty &&
+          !isUserConnectableOutbound(tag: item.groupSelectedTag, displayName: item.groupSelectedTagDisplay)) {
+        return false;
+      }
+      return true;
+    })) {
       // if (groupWithSelected.keys.contains(item.tag)) {
       //   items.add(item.copyWith(selectedTag: groupWithSelected[item.tag]));
       // } else {
@@ -204,6 +219,8 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
     loggy.debug("changing proxy, group: [$groupTag] - outbound: [$outboundTag]");
     if (!state.hasValue) return;
     final outbounds = state.value!;
+    final transport = await readBaseNetworkTransport();
+    if (!isServerAllowedForTransport(outboundTag, transport, tag: outboundTag)) return;
     await ref.read(hapticServiceProvider.notifier).lightImpact();
     await ref.read(proxyRepositoryProvider).selectProxy(groupTag, outboundTag).getOrElse((err) {
       loggy.warning("error selecting outbound", err);

@@ -8,6 +8,7 @@ import 'package:hiddify/core/router/adaptive_layout/shell_route_action.dart';
 import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.dart';
 import 'package:hiddify/core/router/go_router/routing_config_notifier.dart';
 import 'package:hiddify/features/stats/widget/side_bar_stats_overview.dart';
+import 'package:hiddify/core/widget/kosmos_surface.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class MyAdaptiveLayout extends HookConsumerWidget {
@@ -84,23 +85,15 @@ class MyAdaptiveLayout extends HookConsumerWidget {
         bottomNavigationBar: isMobileBreakpoint
             ? Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: .10),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
+                child: KosmosSurface(
+                  padding: EdgeInsets.zero,
+                  borderRadius: 28,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(28),
                     child: FocusScope(
                       node: navScopeNode,
                       child: NavigationBar(
-                        selectedIndex: navigationShell.currentIndex <= 1 ? navigationShell.currentIndex : 0,
+                        selectedIndex: navigationShell.currentIndex,
                         destinations: _navDests(_actions(t, showProfilesAction, isMobileBreakpoint)),
                         onDestinationSelected: (index) => _onTap(context, index),
                       ),
@@ -120,8 +113,11 @@ class MyAdaptiveLayout extends HookConsumerWidget {
 
   List<ShellRouteAction> _actions(Translations t, bool showProfilesAction, bool isMobileBreakpoint) => [
     ShellRouteAction(Icons.power_settings_new_rounded, t.pages.home.title),
+    ShellRouteAction(Icons.person_outline_rounded, 'Кабинет'),
+    // Keep desktop action order identical to StatefulShellRoute branch order.
     if (showProfilesAction && !isMobileBreakpoint) ShellRouteAction(Icons.view_list_rounded, t.pages.profiles.title),
     ShellRouteAction(Icons.settings_rounded, t.pages.settings.title),
+    ShellRouteAction(Icons.headset_mic_outlined, 'Помощь'),
     if (!isMobileBreakpoint) ShellRouteAction(Icons.description_rounded, t.pages.logs.title),
     if (!isMobileBreakpoint) ShellRouteAction(Icons.info_rounded, t.pages.about.title),
   ];

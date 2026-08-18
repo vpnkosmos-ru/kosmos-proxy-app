@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
@@ -8,7 +7,6 @@ import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
-import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 import 'package:hiddify/singbox/model/singbox_config_enum.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -69,7 +67,7 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
       ),
       MenuItem.submenu(
         label: t.pages.settings.inbound.serviceMode,
-        icon: Assets.images.trayIconIco,
+        icon: _approvedTrayIconPath,
         submenu: Menu(
           items: [
             ...ServiceMode.values.map(
@@ -83,26 +81,11 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
     ],
   );
 
-  String _trayIconPath(ConnectionStatus status) {
-    final isDarkMode = WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-    const images = Assets.images;
-    final isWindows = PlatformUtils.isWindows;
-    switch (status) {
-      case Connected():
-        return isWindows ? images.trayIconConnectedIco : images.trayIconConnectedPng.path;
-      case Connecting():
-      case Disconnecting():
-        return isWindows ? images.trayIconDisconnectedIco : images.trayIconDisconnectedPng.path;
-      case Disconnected():
-        return isWindows
-            ? isDarkMode
-                  ? images.trayIconIco
-                  : images.trayIconDarkIco
-            : isDarkMode
-            ? images.trayIconDarkPng.path
-            : images.trayIconPng.path;
-    }
-  }
+  static const _approvedTrayIconPath = 'assets/branding-approved/kosmos_proxy_app_icon_1024.png';
+
+  // Desktop tray uses the approved Kosmos raster asset for every state. Android
+  // never initializes this service, and no legacy tray icon is packaged.
+  String _trayIconPath(ConnectionStatus status) => _approvedTrayIconPath;
 
   String _trayTooltip(ConnectionStatus connection, int urlTestDelay, Translations t) {
     final r = "${Constants.appName} - ${connection.present(t)}";
@@ -235,7 +218,7 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with TrayListener, AppLogg
 //         MenuItem.separator(),
 //         MenuItem(
 //           label: t.config.serviceMode,
-//           icon: Assets.images.trayIconIco,
+//           icon: _approvedTrayIconPath,
 //           disabled: true,
 //         ),
 

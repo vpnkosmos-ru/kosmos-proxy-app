@@ -2,6 +2,8 @@ import 'package:hiddify/core/db/provider/db_providers.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/http_client/http_client_provider.dart';
 import 'package:hiddify/features/profile/data/profile_data_source.dart';
+import 'package:hiddify/features/profile/add/subscription_url_store.dart';
+import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/data/profile_path_resolver.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
@@ -11,6 +13,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_data_providers.g.dart';
+
+final subscriptionUrlStoreProvider = Provider<SubscriptionUrlStore>(
+  (ref) => SubscriptionUrlStore(ref.watch(sharedPreferencesProvider).requireValue),
+);
 
 @Riverpod(keepAlive: true)
 Future<ProfileRepository> profileRepository(Ref ref) async {
